@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.exam.Entity.MasUser;
+import com.exam.Entity.MasUserToken;
 import com.exam.Repositry.AuthRepo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -43,10 +45,10 @@ public class TokenService {
             if (claims != null) {
                 String userId = claims.getSubject();                
                 
-                List<Map<String, Object>> data =authrepo.tokenCheckRepo( userId,token);
+                List<MasUserToken> data =authrepo.tokenCheckRepo( userId,token);
                 ////System.out.println("----"+data);
                 if (data != null && !data.isEmpty()) {
-                    boolean isLogout = (Boolean) data.get(0).get("is_invalid");
+                    boolean isLogout = (Boolean) data.get(0).getIsInvalid();
                     return !isLogout; 
                 }
             }

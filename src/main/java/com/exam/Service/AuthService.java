@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.exam.Entity.MasUser;
+import com.exam.Entity.MasUserToken;
 import com.exam.Exception.GlobalExceptionHandler;
 import com.exam.Repositry.AuthRepo;
 import com.exam.Response.ApiResponses;
@@ -26,26 +28,26 @@ public class AuthService {
 	TokenService tokenservice;
 	
 	public ResponseEntity<ApiResponses> loginService(ResponseBean response, CommonReqModel model){
-		List<Map<String,Object>> data=null;
+		List<MasUser> data=null;
 		LoginResModel user=new LoginResModel();
 		String token="";
-		int tokenInsertres=0;
+		Object tokenInsertres=null;
 		try {
 			if(model.getUuid().isEmpty() || model.getUuid().isBlank() || model.getUser_pwd().isBlank() || model.getUser_pwd().isEmpty()) {
 				return response.AppResponse("Nulltype", null, null);
 			}
 			
 			data=authrepo.loginRepo(model.getUuid(), model.getUser_pwd());
-			
+			System.out.println(data);
 			if(!data.isEmpty() && data!=null) {
-				user.setUser_name(data.get(0).get("user_name").toString());
-				user.setUser_mobile(data.get(0).get("user_mobile").toString());
-				user.setUser_email(data.get(0).get("user_email").toString());
-				user.setUser_branch(data.get(0).get("user_branch").toString());
-				user.setUser_inst(data.get(0).get("user_inst").toString());
-				token=tokenservice.generateToken(model.getUuid(), data.get(0).get("user_role").toString());
+				user.setUser_name(data.get(0).getUserName());
+				user.setUser_mobile(data.get(0).getUserMobile());
+				user.setUser_email(data.get(0).getUserEmail());
+				user.setUser_branch(data.get(0).getUserBranch());
+				user.setUser_inst(data.get(0).getUserInst());
+				token=tokenservice.generateToken(model.getUuid(), data.get(0).getUserRole());
 				tokenInsertres=authrepo.insertTokenRepo(model.getUuid(), token);
-				if(tokenInsertres>0) {
+				if(tokenInsertres!=null) {
 					return response.AppResponse("LoginSuccess",token, user);
 				}
 				else {
@@ -65,7 +67,7 @@ public class AuthService {
 	public ResponseEntity<ApiResponses> refreshTokenService(ResponseBean response, String oldToken){
 	
 		String token="";
-		int tokenInsertres=0,tokenUpdateres=0;
+		Object tokenInsertres=null,tokenUpdateres=null;
 		try {
 			if(oldToken.isBlank() || oldToken.isEmpty()) {
 				return response.AppResponse("Nulltype", null, null);
@@ -83,7 +85,7 @@ public class AuthService {
 					tokenInsertres=authrepo.insertTokenRepo(uuid, token);
 					System.out.println(tokenInsertres);
 					System.out.println(tokenUpdateres+"--");
-					if(tokenInsertres>0 && tokenUpdateres>0) {
+					if(tokenInsertres!=null && tokenUpdateres!=null) {
 						return response.AppResponse("RefreshSuccess",token, null);
 					}
 					else {
@@ -105,7 +107,7 @@ public class AuthService {
 	public ResponseEntity<ApiResponses> logoutService(ResponseBean response, String oldToken){
 	
 		String token="";
-		int tokenInsertres=0,tokenUpdateres=0;
+		Object tokenInsertres=null,tokenUpdateres=null;
 		try {
 			if(oldToken.isBlank() || oldToken.isEmpty()) {
 				return response.AppResponse("Nulltype", null, null);
@@ -116,7 +118,7 @@ public class AuthService {
 			}
 				
 					tokenUpdateres=authrepo.updateTokenRecordRepo("Logout", oldToken);
-					if( tokenUpdateres>0) {
+					if( tokenUpdateres!=null) {
 						return response.AppResponse("LogoutSuccess",null, null);
 					}
 					else {

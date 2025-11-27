@@ -14,13 +14,14 @@ import org.springframework.web.bind.annotation.RestController;
 import com.exam.Response.ApiResponses;
 import com.exam.Response.ResponseBean;
 import com.exam.Service.AuthService;
+import com.exam.Service.AuthServiceNew;
 import com.exam.reqDTO.CommonReqModel;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 	@Autowired
-	AuthService authserv;
+	AuthServiceNew authserv;
 	ResponseBean responseBean=new ResponseBean();
 	
 	@PostMapping("/login")

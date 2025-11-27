@@ -3,7 +3,6 @@ package com.exam.Exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.BadSqlGrammarException;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
@@ -32,24 +31,24 @@ public class GlobalExceptionHandler {
         response.put("status", HttpStatus.BAD_REQUEST.value());
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
-    @ExceptionHandler(BadSqlGrammarException.class)
-    public ResponseEntity<Map<String, Object>> BadSqlGrammarException(BadSqlGrammarException ex) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("error", "Statement Error");
-        response.put("message", ex.getMessage());
-        response.put("status", HttpStatus.BAD_REQUEST.value());
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-    }
-    @ExceptionHandler(org.springframework.jdbc.UncategorizedSQLException.class)
-    public ResponseEntity<Map<String, Object>> UncategorizedSQLException(BadSqlGrammarException ex) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("error", "Parameter mismatch");
-        response.put("message", ex.getMessage());
-        response.put("status", HttpStatus.BAD_REQUEST.value());
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-    }
+//    @ExceptionHandler(BadSqlGrammarException.class)
+//    public ResponseEntity<Map<String, Object>> BadSqlGrammarException(BadSqlGrammarException ex) {
+//        Map<String, Object> response = new HashMap<>();
+//        response.put("timestamp", LocalDateTime.now());
+//        response.put("error", "Statement Error");
+//        response.put("message", ex.getMessage());
+//        response.put("status", HttpStatus.BAD_REQUEST.value());
+//        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+//    }
+//    @ExceptionHandler(org.springframework.jdbc.UncategorizedSQLException.class)
+//    public ResponseEntity<Map<String, Object>> UncategorizedSQLException(BadSqlGrammarException ex) {
+//        Map<String, Object> response = new HashMap<>();
+//        response.put("timestamp", LocalDateTime.now());
+//        response.put("error", "Parameter mismatch");
+//        response.put("message", ex.getMessage());
+//        response.put("status", HttpStatus.BAD_REQUEST.value());
+//        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+//    }
     // Handle DataAccessException (e.g., database errors)
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<Map<String, Object>> handleDatabaseException(DataAccessException ex) {
