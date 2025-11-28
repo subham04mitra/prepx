@@ -16,33 +16,19 @@ public class CommonReqModel {
 
 	
 	private String uuid;
-	private String paperid;
-	private String paper_id;
 	private String user_pwd;
 	private String token;
-	private Object subject;
-	private Object chapter;
-	private String examName;
-	private int duration;
-	private String examDate;
-	private int totalMarks;
-	private int totalQs;
-	private int eachMark;
-	private String exam;
-	private String examType;
-	private Object topics;
-	private String id;
-	private String pwd;
 	private String email;
 	private String mobile;
 	private String name;
 	private String role;
 	private String branch;
 	private String inst;
-	private String owner;
 	private String[] domain;
 	private String level;
-	 private List<QA> res;
+	private String stream;
+	private String type;
+	private List<QA> res;
 	
 	
 	

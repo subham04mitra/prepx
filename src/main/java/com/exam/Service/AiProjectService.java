@@ -3,12 +3,17 @@ package com.exam.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import com.exam.Entity.MasSubscription;
+import com.exam.Entity.UserSubscription;
 import com.exam.Exception.GlobalExceptionHandler;
+import com.exam.Repositry.MasSubscriptionRepository;
+import com.exam.Repositry.UserSubscriptionRepository;
 import com.exam.Response.ApiResponses;
 import com.exam.Response.ResponseBean;
 import com.exam.Security.TokenService;
@@ -24,6 +29,12 @@ public class AiProjectService {
 
 	@Autowired
 	TokenService tokenservice;
+	
+	@Autowired
+    UserSubscriptionRepository usersubRepo;
+	
+	@Autowired
+	MasSubscriptionRepository massubRepo;
 	
 	@Autowired
 	 GeminiService geminiService;
@@ -45,13 +56,33 @@ public class AiProjectService {
 				String uuid=tdata[1];
 				String role=tdata[0];
 //				System.out.println(role);
-				data=geminiService.askGeminiForQuestions(model.getLevel(), model.getDomain());
-				if(!data.isEmpty()) {
-					return response.AppResponse("Success", null, data);
+				
+				
+				Optional<UserSubscription> subData=usersubRepo.findByUuid(uuid);
+				
+				int userCount=subData.get().getCount();
+				
+				String userSubType=subData.get().getSubType();
+				
+				
+				Optional<MasSubscription> masSubData=massubRepo.findBySubType(userSubType);
+				
+				int subLimit=masSubData.get().getLimit();
+				
+				if(userCount<subLimit) {
+					data=geminiService.askGeminiForQuestions(model.getLevel(), model.getDomain());
+					if(!data.isEmpty()) {
+						return response.AppResponse("Success", null, data);
+					}
+					else {
+						return response.AppResponse("TryAgain", null, null);
+					}
 				}
 				else {
-					return response.AppResponse("TryAgain", null, null);
+					return response.AppResponse("SubExp", null, null);
 				}
+				
+				
 		}catch(Exception ex) {
 			throw ex;
 		}
@@ -84,9 +115,18 @@ public class AiProjectService {
 					e.printStackTrace();
 				}
 //				System.out.println(jsonText);
-				
+								
 				data=geminiService.getInterviewFeedback(jsonText);
 				if(!data.isEmpty()) {
+					
+					UserSubscription userSub=usersubRepo.findByUuid(uuid).get();
+					
+					userSub.setCount(userSub.getCount()+1);
+					
+					usersubRepo.save(userSub);
+					
+					
+					
 					return response.AppResponse("Success", null, data);
 				}
 				else {

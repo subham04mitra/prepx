@@ -53,4 +53,41 @@ public class AuthController {
 		
 		return finalResponse;
 	}
+	
+	
+	@PostMapping("/register")
+	public ResponseEntity<ApiResponses> registrationController(@RequestBody CommonReqModel model){
+		
+		ResponseEntity<ApiResponses> finalResponse;
+		
+		finalResponse=authserv.registerService(responseBean,model);
+		
+		return finalResponse;
+	}
+	
+	
+	@PostMapping("/check-uuid")
+	public ResponseEntity<ApiResponses> checkuuidController(@RequestBody CommonReqModel model){
+		
+		ResponseEntity<ApiResponses> finalResponse;
+		
+		finalResponse=authserv.checkuuidService(responseBean,model);
+		
+		return finalResponse;
+	}
+
+	
+	@PostMapping("/subscribe")
+	public ResponseEntity<ApiResponses> subscribeController(@RequestBody CommonReqModel model,@RequestHeader("Authorization") String authorizationHeader){
+		String authToken = authorizationHeader.split(" ")[1];
+		ResponseEntity<ApiResponses> finalResponse;
+		
+		finalResponse=authserv.subscribeService(responseBean,model,authToken);
+		
+		return finalResponse;
+	}
+	
+	
+	
+
 }

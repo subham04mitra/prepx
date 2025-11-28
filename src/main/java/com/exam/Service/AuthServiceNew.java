@@ -2,6 +2,7 @@ package com.exam.Service;
 
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,9 +12,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.exam.Entity.MasUser;
 import com.exam.Entity.MasUserToken;
+import com.exam.Entity.UserSubscription;
 import com.exam.Exception.GlobalExceptionHandler;
 import com.exam.Repositry.MasUserRepository;
 import com.exam.Repositry.MasUserTokenRepository;
+import com.exam.Repositry.UserSubscriptionRepository;
 import com.exam.Response.ApiResponses;
 import com.exam.Response.ResponseBean;
 import com.exam.Security.TokenService;
@@ -25,6 +28,9 @@ public class AuthServiceNew {
 
     @Autowired
     MasUserRepository userRepo;
+    
+    @Autowired
+    UserSubscriptionRepository usersubRepo;
 
     @Autowired
     MasUserTokenRepository tokenRepo;
@@ -55,7 +61,7 @@ public class AuthServiceNew {
             user.setUser_name(userDoc.getUserName());
             user.setUser_mobile(userDoc.getUserMobile());
             user.setUser_email(userDoc.getUserEmail());
-            user.setUser_branch(userDoc.getUserBranch());
+            user.setUser_branch(userDoc.getStream());
             user.setUser_inst(userDoc.getUserInst());
 
             String token = tokenservice.generateToken(model.getUuid(), userDoc.getUserRole());
@@ -149,6 +155,97 @@ public class AuthServiceNew {
             }
 
             return response.AppResponse("Error", null, null);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw ex;
+        }
+    }
+    
+    
+    
+    public ResponseEntity<ApiResponses> registerService(ResponseBean response, CommonReqModel model) {
+
+        try {
+            if (model.getUuid().isEmpty() || model.getUser_pwd().isEmpty() || model.getEmail().isEmpty() || model.getInst().isEmpty()
+            		|| model.getBranch().isEmpty() || model.getStream().isEmpty()) {
+                return response.AppResponse("Nulltype", null, null);
+            }
+            
+
+            MasUser userData =new MasUser();
+
+            userData.setUserEmail(model.getEmail());
+            userData.setUserMobile(model.getMobile());
+            userData.setStream(model.getStream());
+            userData.setUserBranch(model.getBranch());
+            userData.setUserInst(model.getInst());
+            userData.setUserName(model.getName());
+            userData.setUserPwd(model.getUser_pwd());
+            userData.setActiveFlag("Y");
+            userData.setUserRole("USER");
+            userData.setEntryTs(Instant.now());
+            userData.setUuid(model.getUuid());
+            
+            
+            userRepo.save(userData);
+            
+            UserSubscription userSubscription=new UserSubscription();
+            userSubscription.setUuid(model.getUuid());
+            userSubscription.setSubType("F");
+            userSubscription.setEntryTs(Instant.now());
+            
+            usersubRepo.save(userSubscription);
+            
+            
+            return response.AppResponse("RegSuccess", null,null);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw ex;
+        }
+    }
+    
+    
+    public ResponseEntity<ApiResponses> checkuuidService(ResponseBean response, CommonReqModel model) {
+
+        try {
+            if (model.getUuid().isEmpty()) {
+                return response.AppResponse("Nulltype", null, null);
+            }
+            
+            
+            Optional<MasUser> userData=userRepo.findByUuidAndActiveFlag(model.getUuid(), "Y");
+
+           if(userData.isPresent()) {
+        	   return response.AppResponse("Found", null,null);
+           }
+           else {
+        	   return response.AppResponse("SuccessF", null,null);
+           }
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw ex;
+        }
+    }
+    
+    public ResponseEntity<ApiResponses> subscribeService(ResponseBean response, CommonReqModel model,String authToken) {
+
+        try {
+            if (model.getUuid().isEmpty() || model.getUser_pwd().isEmpty() || model.getEmail().isEmpty() || model.getInst().isEmpty()
+            		|| model.getBranch().isEmpty() || model.getStream().isEmpty()) {
+                return response.AppResponse("Nulltype", null, null);
+            }
+            String[] tdata = tokenservice.decodeJWT(authToken);
+            String uuid = tdata[1];
+
+            UserSubscription usesubrData =usersubRepo.findByUuid(uuid).get();
+            
+            usesubrData.setSubType(model.getType());
+            usersubRepo.save(usesubrData);
+            
+            return response.AppResponse("RegSuccess", null,null);
 
         } catch (Exception ex) {
             ex.printStackTrace();

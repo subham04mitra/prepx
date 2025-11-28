@@ -19,7 +19,7 @@ public class MasUser {
     private String uuid;
 
     @Field("user_pwd")
-    private Object userPwd;    // Use Object to accept number or string
+    private Object userPwd;    
 
     @Field("user_name")
     private String userName;
@@ -35,7 +35,7 @@ public class MasUser {
 
     @Field("active_flag")
     private String activeFlag;
-
+    
     @Field("entry_ts")
     private Instant entryTs;
 
@@ -45,12 +45,7 @@ public class MasUser {
     @Field("user_mobile")
     private String userMobile;
 
-    @Field("entry_by")
-    private String entryBy;
+    @Field("stream")
+    private String stream;
 
-    @Field("owner_id")
-    private String ownerId;
-
-    @Field("admin_id")
-    private String adminId;
 }

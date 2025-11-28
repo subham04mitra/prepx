@@ -55,6 +55,14 @@ public class ResponseBean {
                 response.setMessage("Success");                
                 response.setData(data);                
                 return new ResponseEntity<>(response, HttpStatus.OK);
+            case "RegSuccess":
+                response.setCode("200");
+                response.setMessage("Register Succesfully");                    
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            case "SubExp":
+                response.setCode("403");
+                response.setMessage("Subscription Ended");                    
+                return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
             case "Error":
                 response.setCode("400");
                 response.setMessage("Something went wrong");
@@ -75,6 +83,12 @@ public class ResponseBean {
                 response.setCode("400");
                 response.setMessage("No Record Found");
                 return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            case "SuccessF":
+                response.setCode("200");
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            case "Found":
+                response.setCode("400");
+                return new ResponseEntity<>(response, HttpStatus.ALREADY_REPORTED);
             default:
                 response.setCode("400");
                 response.setMessage("Unknown type");
