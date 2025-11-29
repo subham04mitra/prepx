@@ -3,6 +3,7 @@ package com.exam.Service;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,10 +11,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.exam.Entity.InterviewFeedback;
+import com.exam.Entity.MasSubscription;
 import com.exam.Entity.MasUser;
 import com.exam.Entity.MasUserToken;
 import com.exam.Entity.UserSubscription;
 import com.exam.Exception.GlobalExceptionHandler;
+import com.exam.Repositry.InterviewFeedbackRepository;
+import com.exam.Repositry.MasSubscriptionRepository;
 import com.exam.Repositry.MasUserRepository;
 import com.exam.Repositry.MasUserTokenRepository;
 import com.exam.Repositry.UserSubscriptionRepository;
@@ -22,6 +27,7 @@ import com.exam.Response.ResponseBean;
 import com.exam.Security.TokenService;
 import com.exam.reqDTO.CommonReqModel;
 import com.exam.resDTO.LoginResModel;
+import com.exam.resDTO.ProfileDTO;
 
 @Service
 public class AuthServiceNew {
@@ -34,9 +40,15 @@ public class AuthServiceNew {
 
     @Autowired
     MasUserTokenRepository tokenRepo;
+    
+    @Autowired
+    MasSubscriptionRepository massubRepo;
 
     @Autowired
     TokenService tokenservice;
+    
+    @Autowired
+    InterviewFeedbackRepository interviewFeedbackRepository;
 
     // -------------------------------------------------------------------
     // LOGIN IMPLEMENTATION (MONGO)
@@ -183,7 +195,7 @@ public class AuthServiceNew {
             userData.setUserName(model.getName());
             userData.setUserPwd(model.getUser_pwd());
             userData.setActiveFlag("Y");
-            userData.setUserRole("USER");
+            userData.setUserRole("ADMIN");
             userData.setEntryTs(Instant.now());
             userData.setUuid(model.getUuid());
             
@@ -233,23 +245,113 @@ public class AuthServiceNew {
     public ResponseEntity<ApiResponses> subscribeService(ResponseBean response, CommonReqModel model,String authToken) {
 
         try {
-            if (model.getUuid().isEmpty() || model.getUser_pwd().isEmpty() || model.getEmail().isEmpty() || model.getInst().isEmpty()
-            		|| model.getBranch().isEmpty() || model.getStream().isEmpty()) {
-                return response.AppResponse("Nulltype", null, null);
-            }
+            String subName="";
+        	
+        	if(authToken.isBlank() || authToken.isEmpty()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
+			
+			if(!tokenservice.validateTokenAndReturnBool(authToken)) {
+				throw new GlobalExceptionHandler.ExpiredException();
+			}
             String[] tdata = tokenservice.decodeJWT(authToken);
             String uuid = tdata[1];
 
             UserSubscription usesubrData =usersubRepo.findByUuid(uuid).get();
+            MasSubscription masSub=massubRepo.findBySubType(usesubrData.getSubType()).get();
             
-            usesubrData.setSubType(model.getType());
-            usersubRepo.save(usesubrData);
-            
-            return response.AppResponse("RegSuccess", null,null);
+            System.out.println(usesubrData.getCount());System.err.println(masSub.getLimit());
+            if(usesubrData.getTCount()<masSub.getLimit()) {
+
+           	 return response.AppResponse("SubExists", null,subName);
+            }
+            else {
+            	usesubrData.setSubType(model.getType());
+                usesubrData.setTCount(0);
+                usersubRepo.save(usesubrData);
+                subName=masSub.getSubName();
+                return response.AppResponse("RegSuccess", null,null);
+            }
+           
 
         } catch (Exception ex) {
             ex.printStackTrace();
             throw ex;
         }
     }
+    
+    
+    
+    public ResponseEntity<ApiResponses> profileService(ResponseBean response, String authToken) {
+
+        try {
+        	if(authToken.isBlank() || authToken.isEmpty()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
+			
+			if(!tokenservice.validateTokenAndReturnBool(authToken)) {
+				throw new GlobalExceptionHandler.ExpiredException();
+			}
+            
+            String[] tdata = tokenservice.decodeJWT(authToken);
+            String uuid = tdata[1];
+            MasUser userData=userRepo.findByUuidAndActiveFlag(uuid, "Y").get();
+            UserSubscription usesubData =usersubRepo.findByUuid(uuid).get();
+            MasSubscription masSub=massubRepo.findBySubType(usesubData.getSubType()).get();
+            
+            ProfileDTO profile=new ProfileDTO();
+            
+            profile.setName(userData.getUserName());
+            profile.setMobile(userData.getUserMobile());
+            profile.setEmail(userData.getUserEmail());
+            profile.setInstitute(userData.getUserInst());
+            profile.setStream(userData.getStream());
+            profile.setCity(userData.getUserBranch());
+            profile.setSubName(masSub.getSubName());
+            profile.setIntCount(usesubData.getCount());
+            profile.setCreationData(userData.getEntryTs());
+            
+          
+            return response.AppResponse("Success", null,profile);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw ex;
+        }
+    }
+    
+    
+    public ResponseEntity<ApiResponses> viewRecordsService(ResponseBean response, String authToken) {
+
+        try {
+        	if(authToken.isBlank() || authToken.isEmpty()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
+			
+			if(!tokenservice.validateTokenAndReturnBool(authToken)) {
+				throw new GlobalExceptionHandler.ExpiredException();
+			}
+            
+            String[] tdata = tokenservice.decodeJWT(authToken);
+            String uuid = tdata[1];
+            
+            
+            
+            List<InterviewFeedback> feedback=interviewFeedbackRepository.findByUuid(uuid);
+          if(!feedback.isEmpty()) {
+        	  return response.AppResponse("Success", null,feedback);
+          }
+          else {
+        	  return response.AppResponse("Notfound", null,null);
+          }
+            
+           
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw ex;
+        }
+    }
+    
+    
 }

@@ -1,17 +1,22 @@
 package com.exam.Service;
 
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import com.exam.Entity.InterviewFeedback;
 import com.exam.Entity.MasSubscription;
 import com.exam.Entity.UserSubscription;
 import com.exam.Exception.GlobalExceptionHandler;
+import com.exam.Repositry.InterviewFeedbackRepository;
 import com.exam.Repositry.MasSubscriptionRepository;
 import com.exam.Repositry.UserSubscriptionRepository;
 import com.exam.Response.ApiResponses;
@@ -32,6 +37,9 @@ public class AiProjectService {
 	
 	@Autowired
     UserSubscriptionRepository usersubRepo;
+	
+	@Autowired
+    InterviewFeedbackRepository interviewFeedbackRepository;
 	
 	@Autowired
 	MasSubscriptionRepository massubRepo;
@@ -60,7 +68,7 @@ public class AiProjectService {
 				
 				Optional<UserSubscription> subData=usersubRepo.findByUuid(uuid);
 				
-				int userCount=subData.get().getCount();
+				int userCount=subData.get().getTCount();
 				
 				String userSubType=subData.get().getSubType();
 				
@@ -119,9 +127,36 @@ public class AiProjectService {
 				data=geminiService.getInterviewFeedback(jsonText);
 				if(!data.isEmpty()) {
 					
+					
+					 Map<String, Object> scores = (Map<String, Object>) data.get("scores");
+
+					    InterviewFeedback fb = new InterviewFeedback();
+
+					    fb.setTechnicalScore(Double.parseDouble(scores.get("technicalScore").toString()));
+					    fb.setCommunicationScore(Double.parseDouble(scores.get("communicationScore").toString()));
+					    fb.setVoiceClarityScore(Double.parseDouble(scores.get("voiceClarityScore").toString()));
+					    fb.setOverallScore(Double.parseDouble(scores.get("overallScore").toString()));
+
+					    fb.setStrengths((List<String>) data.get("strengths"));
+					    fb.setImprovements((List<String>) data.get("improvements"));
+
+					    fb.setVerdict((String) data.get("verdict"));
+					    fb.setUuid(uuid);
+					    fb.setEntry_ts(Instant.now());
+					    String formattedTopics = Arrays.stream(model.getTopic().split("\\|"))
+					            .map(String::trim)
+					            .collect(Collectors.joining(", "));
+
+					    fb.setTopics(formattedTopics);
+					    fb.setVerdict((String) data.get("verdict"));
+
+					    interviewFeedbackRepository.save(fb);
+					
+					
 					UserSubscription userSub=usersubRepo.findByUuid(uuid).get();
 					
 					userSub.setCount(userSub.getCount()+1);
+					userSub.setTCount(userSub.getTCount()+1);
 					
 					usersubRepo.save(userSub);
 					

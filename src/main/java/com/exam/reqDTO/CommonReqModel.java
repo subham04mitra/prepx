@@ -28,6 +28,7 @@ public class CommonReqModel {
 	private String level;
 	private String stream;
 	private String type;
+	private String topic;
 	private List<QA> res;
 	
 	

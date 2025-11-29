@@ -46,6 +46,11 @@ public class ResponseBean {
                 response.setCode("401");
                 response.setMessage("Unautorized"); 
                 return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+            case "SubExists":
+                response.setCode("409");
+                response.setMessage("You are already subscribed"); 
+                response.setData(data);
+                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             case "TryAgain":
                 response.setCode("502");
                 response.setMessage("Try Again"); 

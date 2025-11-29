@@ -77,15 +77,8 @@ public class AuthController {
 	}
 
 	
-	@PostMapping("/subscribe")
-	public ResponseEntity<ApiResponses> subscribeController(@RequestBody CommonReqModel model,@RequestHeader("Authorization") String authorizationHeader){
-		String authToken = authorizationHeader.split(" ")[1];
-		ResponseEntity<ApiResponses> finalResponse;
-		
-		finalResponse=authserv.subscribeService(responseBean,model,authToken);
-		
-		return finalResponse;
-	}
+	
+	
 	
 	
 	
