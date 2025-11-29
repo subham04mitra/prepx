@@ -91,8 +91,7 @@ public class GeminiService {
     public List<String> askGeminiForQuestions(String level, String[] domains,String plan) {
 //        System.out.println(plan);
     	
-    	 int questionCount = 1;
-//    			 calculateTotalQuestions(plan, domains.length);
+    	 int questionCount =calculateTotalQuestions(plan, domains.length);
     	 String levelPrompt = getPromptBasedOnLevel(level);
         String domainsString = String.join(", ", domains);
 //        System.err.println(questionCount);
