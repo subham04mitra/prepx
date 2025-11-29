@@ -242,44 +242,95 @@ public class AuthServiceNew {
         }
     }
     
-    public ResponseEntity<ApiResponses> subscribeService(ResponseBean response, CommonReqModel model,String authToken) {
+ public ResponseEntity<ApiResponses> subscribeService(ResponseBean response, CommonReqModel model, String authToken) {
 
-        try {
-            String subName="";
-        	
-        	if(authToken.isBlank() || authToken.isEmpty()) {
-				return response.AppResponse("Nulltype", null, null);
-			}
-			
-			if(!tokenservice.validateTokenAndReturnBool(authToken)) {
-				throw new GlobalExceptionHandler.ExpiredException();
-			}
-            String[] tdata = tokenservice.decodeJWT(authToken);
-            String uuid = tdata[1];
-
-            UserSubscription usesubrData =usersubRepo.findByUuid(uuid).get();
-            MasSubscription masSub=massubRepo.findBySubType(usesubrData.getSubType()).get();
-            
-            System.out.println(usesubrData.getCount());System.err.println(masSub.getLimit());
-            if(usesubrData.getTCount()<masSub.getLimit()) {
-
-           	 return response.AppResponse("SubExists", null,subName);
-            }
-            else {
-            	usesubrData.setSubType(model.getType());
-                usesubrData.setTCount(0);
-                usersubRepo.save(usesubrData);
-                subName=masSub.getSubName();
-                return response.AppResponse("RegSuccess", null,null);
-            }
-           
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw ex;
+    try {
+        if (authToken == null || authToken.isBlank()) {
+            return response.AppResponse("Nulltype", null, null);
         }
+
+        if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+            throw new GlobalExceptionHandler.ExpiredException();
+        }
+
+        String uuid = tokenservice.decodeJWT(authToken)[1];
+
+        UserSubscription userSub = usersubRepo.findByUuid(uuid).get();
+        MasSubscription currentSub = massubRepo.findBySubType(userSub.getSubType()).get();
+
+        String newSubType = model.getType();
+        MasSubscription requestedSub = massubRepo.findBySubType(newSubType).get();
+
+        int userUsedCount = userSub.getTCount();
+        int currentLimit = currentSub.getLimit();
+        int newLimit = requestedSub.getLimit();
+
+        boolean isExhausted = userUsedCount >= currentLimit;
+
+        // ---------------- RULE 1: If user tries to downgrade ----------------
+        if (!isUpgradeAllowed(userSub.getSubType(), newSubType)) {
+
+            // downgrade allowed ONLY IF exhausted
+            if (!isExhausted) {
+                return response.AppResponse("DownGradeNotAllowed",
+                        null,
+                        currentSub.getSubName());
+            }
+        }
+
+        // ---------------- RULE 2: Same plan purchase ----------------
+        if (userSub.getSubType().equalsIgnoreCase(newSubType)) {
+
+            // if still has remaining count → block
+            if (!isExhausted) {
+                return response.AppResponse("SubExists",
+                        null,
+                        currentSub.getSubName());
+            }
+
+            // exhausted → allow repurchase (reset count)
+            userSub.setTCount(0);
+            usersubRepo.save(userSub);
+
+            return response.AppResponse("ReSubscribed",
+                    null,
+                    currentSub.getSubName());
+        }
+
+        // ---------------- RULE 3: Upgrade OR Exhausted Downgrade ----------------
+        userSub.setSubType(newSubType);
+        userSub.setTCount(0);
+        usersubRepo.save(userSub);
+
+        return response.AppResponse("ReSubscribed",
+                null,
+                requestedSub.getSubName());
+
+    } catch (Exception ex) {
+        ex.printStackTrace();
+        throw ex;
     }
-    
+}
+
+   private boolean isUpgradeAllowed(String current, String next) {
+
+	    // Ordering: Basic < Silver < Gold
+	    int rankCurrent = getRank(current);
+	    int rankNext = getRank(next);
+	    System.out.println(current+"--"+next);
+	    System.out.println(rankCurrent+"--"+rankNext);
+	    return rankNext >= rankCurrent;  // allow upgrade or same plan
+	}
+
+	private int getRank(String sub) {
+	    return switch (sub.toLowerCase()) {
+	        case "b" -> 1;
+	        case "s" -> 2;
+	        case "g" -> 3;
+	        default -> 0;
+	    };
+	}
+
     
     
     public ResponseEntity<ApiResponses> profileService(ResponseBean response, String authToken) {
@@ -299,6 +350,7 @@ public class AuthServiceNew {
             UserSubscription usesubData =usersubRepo.findByUuid(uuid).get();
             MasSubscription masSub=massubRepo.findBySubType(usesubData.getSubType()).get();
             
+            
             ProfileDTO profile=new ProfileDTO();
             
             profile.setName(userData.getUserName());
@@ -309,6 +361,7 @@ public class AuthServiceNew {
             profile.setCity(userData.getUserBranch());
             profile.setSubName(masSub.getSubName());
             profile.setIntCount(usesubData.getCount());
+            profile.setTCount(masSub.getLimit()-usesubData.getTCount());
             profile.setCreationData(userData.getEntryTs());
             
           

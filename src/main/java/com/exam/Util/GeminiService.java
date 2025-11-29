@@ -36,19 +36,79 @@ public class GeminiService {
         this.objectMapper = new ObjectMapper(); 
     }
 
+    public int calculateTotalQuestions(String plan, int topicsCount) {
 
-    public List<String> askGeminiForQuestions(String level, String[] domains) {
-        
+        int baseQuestions = switch(plan.toLowerCase()) {
+            case "b" -> 5;
+            case "s" -> 8;
+            case "g" -> 12;
+            default -> 5;
+        };
+
+        double multiplier = switch(topicsCount) {
+            case 1 -> 1.0;
+            case 2 -> 1.5;
+            case 3 -> 2.0;
+            default -> 1.0;
+        };
+
+        return (int) Math.round(baseQuestions * multiplier);
+    }
+
+    
+    private String getPromptBasedOnLevel(String levelRange) {
+        return switch (levelRange) {
+
+            case "0-1" ->
+                "Ask very basic beginner-friendly questions focusing on fundamentals, basic syntax, theoretical concepts, and simple definitions.";
+
+            case "1-2" ->
+                "Ask beginner-to-junior level questions focusing on hands-on basics, simple coding logic, debugging basics, REST API basics, and common real-world scenarios.";
+
+            case "2-3" ->
+                "Ask mid-level questions focusing on applied concepts, debugging real issues, understanding frameworks,  and API development.";
+
+            case "3-5" ->
+                "Ask upper mid-level questions focusing on design patterns, performance tuning basics, concurrency basics, scalable API design, and deeper framework internals.";
+
+            case "5-8" ->
+                "Ask senior-level questions focusing on architecture, high-performance systems, concurrency, multithreading, security, optimization, and advanced framework internals.";
+
+            case "8-10" ->
+                "Ask advanced senior/lead-level questions focusing on distributed systems, high-scale microservices, architectural decision-making, async communication patterns, and resilience.";
+
+            case "10+" ->
+                "Ask expert architect-level questions focusing on system design, distributed systems at scale, infrastructure decisions, architecture trade-offs, high availability, and leadership-driven technical decisions.";
+
+            default ->
+                "Ask general technical questions suitable for software engineers.";
+        };
+    }
+
+
+
+    
+    public List<String> askGeminiForQuestions(String level, String[] domains,String plan) {
+//        System.out.println(plan);
+    	
+    	 int questionCount = 1;
+//    			 calculateTotalQuestions(plan, domains.length);
+    	 String levelPrompt = getPromptBasedOnLevel(level);
         String domainsString = String.join(", ", domains);
-        
+//        System.err.println(questionCount);
         String prompt = String.format(
-            "Generate 1 technical interview questions for a candidate with %s year of experience, focusing on the following domains: %s. " +
-            "Strictly return ONLY a raw JSON array of strings. " +
-            "Example format: [\"Question 1\", \"Question 2\"]. " +
-            "Do not include Markdown formatting like ```json ... ``` or any introductory text.",
-            level, 
-            domainsString
-        );
+        	    "Generate %d technical interview questions for a candidate with experience level %s years. " +
+        	    "Difficulty rules: %s " +
+        	    "Focus strictly on the following selected topics: %s. " +
+        	    "Questions must deeply relate to the selected topics only. " +
+        	    "Return ONLY a raw JSON array of strings, like [\"Question 1\", \"Question 2\", ...]. " +
+        	    "Do NOT include Markdown formatting, backticks, explanations, titles, or any extra text.",
+        	    questionCount,
+        	    level,
+        	    levelPrompt,
+        	    domainsString
+        	);
+
         
         GenerateContentConfig config = GenerateContentConfig.builder()
             .responseMimeType("application/json") 

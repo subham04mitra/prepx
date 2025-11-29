@@ -78,7 +78,7 @@ public class AiProjectService {
 				int subLimit=masSubData.get().getLimit();
 				
 				if(userCount<subLimit) {
-					data=geminiService.askGeminiForQuestions(model.getLevel(), model.getDomain());
+					data=geminiService.askGeminiForQuestions(model.getLevel(), model.getDomain(),userSubType);
 					if(!data.isEmpty()) {
 						return response.AppResponse("Success", null, data);
 					}

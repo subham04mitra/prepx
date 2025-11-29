@@ -48,9 +48,18 @@ public class ResponseBean {
                 return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
             case "SubExists":
                 response.setCode("409");
-                response.setMessage("You are already subscribed"); 
+                response.setMessage("You still have remaining interview credits."); 
                 response.setData(data);
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+            case "ReSubscribed":
+                response.setCode("200");
+                response.setMessage("Subscription renewed successfully."); 
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            case "DownGradeNotAllowed":
+                response.setCode("409");
+                response.setMessage("Cannot downgrade while have subscription"); 
+                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+            
             case "TryAgain":
                 response.setCode("502");
                 response.setMessage("Try Again"); 

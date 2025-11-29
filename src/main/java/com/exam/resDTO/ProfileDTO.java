@@ -25,4 +25,5 @@ public class ProfileDTO {
 	private String subName;
 	private Instant creationData;
 	private int intCount;
+	private int tCount;
 }
