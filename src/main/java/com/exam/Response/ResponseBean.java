@@ -73,6 +73,10 @@ public class ResponseBean {
                 response.setCode("200");
                 response.setMessage("Register Succesfully");                    
                 return new ResponseEntity<>(response, HttpStatus.OK);
+            case "fSuccess":
+                response.setCode("200");
+                response.setMessage("Feedback Sent");                    
+                return new ResponseEntity<>(response, HttpStatus.OK);
             case "SubExp":
                 response.setCode("403");
                 response.setMessage("Subscription Ended");                    

@@ -75,7 +75,18 @@ public class ApiController {
 		
 		return finalResponse;
 }
-
+	@PostMapping("/save-feedback")
+	public ResponseEntity<ApiResponses> saveUserFeedbackController(@RequestBody CommonReqModel model,@RequestHeader("Authorization") String authorizationHeader){
+		String authToken = authorizationHeader.split(" ")[1];
+		ResponseEntity<ApiResponses> finalResponse;
+		
+		finalResponse=authserv.saveFeedbackService(responseBean,model,authToken);
+		
+		return finalResponse;
+}
+	
+	
+	
 	@PostMapping("/create-order")
     public Map<String, Object> createOrder(@RequestBody Map<String, Object> data) throws Exception {
         String planId = (String) data.get("planId");

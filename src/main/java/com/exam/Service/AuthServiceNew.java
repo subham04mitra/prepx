@@ -15,12 +15,14 @@ import com.exam.Entity.InterviewFeedback;
 import com.exam.Entity.MasSubscription;
 import com.exam.Entity.MasUser;
 import com.exam.Entity.MasUserToken;
+import com.exam.Entity.UserFeedback;
 import com.exam.Entity.UserSubscription;
 import com.exam.Exception.GlobalExceptionHandler;
 import com.exam.Repositry.InterviewFeedbackRepository;
 import com.exam.Repositry.MasSubscriptionRepository;
 import com.exam.Repositry.MasUserRepository;
 import com.exam.Repositry.MasUserTokenRepository;
+import com.exam.Repositry.UserFeedbackRepository;
 import com.exam.Repositry.UserSubscriptionRepository;
 import com.exam.Response.ApiResponses;
 import com.exam.Response.ResponseBean;
@@ -37,6 +39,9 @@ public class AuthServiceNew {
     
     @Autowired
     UserSubscriptionRepository usersubRepo;
+    
+    @Autowired
+    UserFeedbackRepository userfeedbackRepo;
 
     @Autowired
     MasUserTokenRepository tokenRepo;
@@ -312,6 +317,42 @@ public class AuthServiceNew {
     }
 }
 
+ 
+ 
+ public ResponseEntity<ApiResponses> saveFeedbackService(ResponseBean response, CommonReqModel model, String authToken) {
+
+	    try {
+	        if (authToken == null || authToken.isBlank()) {
+	            return response.AppResponse("Nulltype", null, null);
+	        }
+
+	        if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+	            throw new GlobalExceptionHandler.ExpiredException();
+	        }
+
+	        String uuid = tokenservice.decodeJWT(authToken)[1];
+
+	        
+	        UserFeedback userFeedback=new UserFeedback();
+	        
+	        userFeedback.setUuid(uuid);
+	        userFeedback.setRating(model.getRating());
+	        userFeedback.setFeedback(model.getFeedback() != null ? model.getFeedback() : "");
+
+	        userfeedbackRepo.save(userFeedback);
+	        
+	        return response.AppResponse("fSuccess",
+	                null,
+	                null);
+
+	    } catch (Exception ex) {
+	        ex.printStackTrace();
+	        throw ex;
+	    }
+	}
+
+ 
+ 
  public ResponseEntity<ApiResponses> checksubscribeService(ResponseBean response, CommonReqModel model, String authToken) {
 
 	    try {
