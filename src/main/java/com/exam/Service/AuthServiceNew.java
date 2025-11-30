@@ -312,6 +312,72 @@ public class AuthServiceNew {
     }
 }
 
+ public ResponseEntity<ApiResponses> checksubscribeService(ResponseBean response, CommonReqModel model, String authToken) {
+
+	    try {
+	        if (authToken == null || authToken.isBlank()) {
+	            return response.AppResponse("Nulltype", null, null);
+	        }
+
+	        if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+	            throw new GlobalExceptionHandler.ExpiredException();
+	        }
+
+	        String uuid = tokenservice.decodeJWT(authToken)[1];
+
+	        UserSubscription userSub = usersubRepo.findByUuid(uuid).get();
+	        MasSubscription currentSub = massubRepo.findBySubType(userSub.getSubType()).get();
+
+	        String newSubType = model.getType();
+	        MasSubscription requestedSub = massubRepo.findBySubType(newSubType).get();
+
+	        int userUsedCount = userSub.getTCount();
+	        int currentLimit = currentSub.getLimit();
+	        int newLimit = requestedSub.getLimit();
+
+	        boolean isExhausted = userUsedCount >= currentLimit;
+
+	        // ---------------- RULE 1: If user tries to downgrade ----------------
+	        if (!isUpgradeAllowed(userSub.getSubType(), newSubType)) {
+
+	            // downgrade allowed ONLY IF exhausted
+	            if (!isExhausted) {
+	                return response.AppResponse("DownGradeNotAllowed",
+	                        null,
+	                        currentSub.getSubName());
+	            }
+	        }
+
+	        // ---------------- RULE 2: Same plan purchase ----------------
+	        if (userSub.getSubType().equalsIgnoreCase(newSubType)) {
+
+	            // if still has remaining count → block
+	            if (!isExhausted) {
+	                return response.AppResponse("SubExists",
+	                        null,
+	                        currentSub.getSubName());
+	            }
+
+	            
+
+	            return response.AppResponse("ReSubscribed",
+	                    null,
+	                    currentSub.getSubName());
+	        }
+
+	      
+
+	        return response.AppResponse("ReSubscribed",
+	                null,
+	                requestedSub.getSubName());
+
+	    } catch (Exception ex) {
+	        ex.printStackTrace();
+	        throw ex;
+	    }
+	}
+
+ 
    private boolean isUpgradeAllowed(String current, String next) {
 
 	    // Ordering: Basic < Silver < Gold

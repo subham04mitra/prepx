@@ -23,6 +23,8 @@ import org.springframework.beans.factory.annotation.Value;
 @RestController
 @RequestMapping("/api/mas")
 public class ApiController {
+
+	
 	
 	@Value("${razorpay.key.id}")
     private String RAZORPAY_KEY_ID;
@@ -43,7 +45,15 @@ public class ApiController {
 		
 		return finalResponse;
 }
-	
+	@PostMapping("/check-subscribe")
+	public ResponseEntity<ApiResponses> checksubscribeController(@RequestBody CommonReqModel model,@RequestHeader("Authorization") String authorizationHeader){
+		String authToken = authorizationHeader.split(" ")[1];
+		ResponseEntity<ApiResponses> finalResponse;
+		
+		finalResponse=authserv.checksubscribeService(responseBean,model,authToken);
+		
+		return finalResponse;
+}
 	
 	@GetMapping("/profile")
 	public ResponseEntity<ApiResponses> profileController(@RequestHeader("Authorization") String authorizationHeader){
