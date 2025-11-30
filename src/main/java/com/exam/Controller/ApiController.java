@@ -1,5 +1,8 @@
 package com.exam.Controller;
 
+import java.util.Map;
+
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,11 +16,20 @@ import com.exam.Response.ApiResponses;
 import com.exam.Response.ResponseBean;
 import com.exam.Service.AuthServiceNew;
 import com.exam.reqDTO.CommonReqModel;
+import com.razorpay.Order;
+import com.razorpay.RazorpayClient;
 
+import org.springframework.beans.factory.annotation.Value;
 @RestController
 @RequestMapping("/api/mas")
 public class ApiController {
+	
+	@Value("${razorpay.key.id}")
+    private String RAZORPAY_KEY_ID;
 
+    @Value("${razorpay.key.secret}")
+    private String RAZORPAY_KEY_SECRET;
+	
 	@Autowired
 	AuthServiceNew authserv;
 	ResponseBean responseBean=new ResponseBean();
@@ -54,4 +66,51 @@ public class ApiController {
 		return finalResponse;
 }
 
+	@PostMapping("/create-order")
+    public Map<String, Object> createOrder(@RequestBody Map<String, Object> data) throws Exception {
+        String planId = (String) data.get("planId");
+        
+        // 1. Calculate amount based on planId on the SERVER SIDE
+        int amountInRupees = 0;
+        if ("B".equals(planId)) amountInRupees = 9;
+        else if ("S".equals(planId)) amountInRupees = 29;
+        else if ("G".equals(planId)) amountInRupees = 49;
+        
+        // Razorpay expects amount in PAISE (multiply by 100)
+        int amountInPaise = amountInRupees * 100;
+
+        RazorpayClient client = new RazorpayClient(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET);
+
+        JSONObject orderRequest = new JSONObject();
+        orderRequest.put("amount", amountInPaise);
+        orderRequest.put("currency", "INR");
+        orderRequest.put("receipt", "txn_" + System.currentTimeMillis());
+
+        Order order = client.orders.create(orderRequest);
+
+        // Return details to Frontend
+        return Map.of(
+            "id", order.get("id"),
+            "amount", order.get("amount"),
+            "currency", "INR",
+            "key", RAZORPAY_KEY_ID
+        );
+    }
+
+    @PostMapping("/verify-payment")
+    public Map<String, String> verifyPayment(@RequestBody Map<String, String> data) {
+        String orderId = data.get("razorpay_order_id");
+        String paymentId = data.get("razorpay_payment_id");
+        String signature = data.get("razorpay_signature");
+        String planId = data.get("planId");
+
+        // 1. Verify Signature (Use Utils provided by Razorpay)
+        // boolean isValid = Utils.verifyPaymentSignature(data, RAZORPAY_KEY_SECRET);
+        
+        // 2. If Valid: Update User in Database to 'planId'
+        
+        return Map.of("status", "success");
+    }
+	
+	
 }
