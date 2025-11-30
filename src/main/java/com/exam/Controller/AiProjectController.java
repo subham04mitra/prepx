@@ -41,6 +41,7 @@ public class AiProjectController {
 		
 		finalResponse=aiservice.getQsListService(model,responseBean,authToken);
 		
+		
 		return finalResponse;	
 
 		}

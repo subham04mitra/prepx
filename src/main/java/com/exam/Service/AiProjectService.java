@@ -47,7 +47,7 @@ public class AiProjectService {
 	@Autowired
 	 GeminiService geminiService;
 	public ResponseEntity<ApiResponses> getQsListService(CommonReqModel model, ResponseBean response, String authToken){
-		List<String> data=null;
+		List<String> data=null,data2=null,data3=null;
 		try {
 			if(authToken.isBlank() || authToken.isEmpty()) {
 				return response.AppResponse("Nulltype", null, null);
@@ -80,6 +80,37 @@ public class AiProjectService {
 				if(userCount<subLimit) {
 					data=geminiService.askGeminiForQuestions(model.getLevel(), model.getDomain(),userSubType);
 					if(!data.isEmpty()) {
+						
+						if("S".equals(userSubType) && !"".equals(model.getResume()) && "".equals(model.getJob_description())){
+//							System.out.println(1);
+							data2=geminiService.askGeminiForResumeQuestions(model.getLevel(), model.getResume(),userSubType);
+							
+							for (String item : data) {
+								data2.add(item);
+							}
+							return response.AppResponse("Success", null, data2);
+						}
+						if("G".equals(userSubType) && !"".equals(model.getResume())){
+//							System.out.println(1);
+							data2=geminiService.askGeminiForResumeQuestions(model.getLevel(), model.getResume(),userSubType);
+							
+							for (String item : data) {
+								data2.add(item);
+							}
+						}
+						if("G".equals(userSubType) && !"".equals(model.getJob_description())) {
+//							System.out.println(2);
+							data3=geminiService.askGeminiForJDQuestions(model.getLevel(), model.getJob_description(),userSubType);
+						
+//							
+							for (String item : data) {
+								data3.add(item);
+							}
+							
+							return response.AppResponse("Success", null, data3);
+							
+						}
+						
 						return response.AppResponse("Success", null, data);
 					}
 					else {

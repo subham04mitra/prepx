@@ -29,6 +29,8 @@ public class CommonReqModel {
 	private String stream;
 	private String type;
 	private String topic;
+	private String resume;
+	private String job_description;
 	private List<QA> res;
 	
 	
