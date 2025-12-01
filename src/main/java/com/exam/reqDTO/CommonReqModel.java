@@ -32,6 +32,7 @@ public class CommonReqModel {
 	private String resume;
 	private int rating;
 	private String feedback;
+	private String ref;
 	private String job_description;
 	private List<QA> res;
 	

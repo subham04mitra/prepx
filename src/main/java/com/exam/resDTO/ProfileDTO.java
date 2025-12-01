@@ -23,6 +23,8 @@ public class ProfileDTO {
 	private String stream;
 	private String subType;
 	private String subName;
+	private String ref;
+	private int refCount;
 	private Instant creationData;
 	private int intCount;
 	private int tCount;

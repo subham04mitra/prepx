@@ -5,6 +5,8 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -189,6 +191,15 @@ public class AuthServiceNew {
                 return response.AppResponse("Nulltype", null, null);
             }
             
+           List<MasUser> userDataCheck=userRepo.findByUserEmailOrUserMobile(model.getEmail(), model.getMobile());
+//            System.err.println("--------"+userDataCheck);
+            if(!userDataCheck.isEmpty()) {
+            	return response.AppResponse("Exists", null, null);
+            }
+            
+            String refCode = new Random().ints(6, 0, 36)
+                    .mapToObj(i -> "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".charAt(i) + "")
+                    .collect(Collectors.joining());
 
             MasUser userData =new MasUser();
 
@@ -203,6 +214,7 @@ public class AuthServiceNew {
             userData.setUserRole("ADMIN");
             userData.setEntryTs(Instant.now());
             userData.setUuid(model.getUuid());
+            userData.setRefCode(refCode);
             
             
             userRepo.save(userData);
@@ -211,9 +223,22 @@ public class AuthServiceNew {
             userSubscription.setUuid(model.getUuid());
             userSubscription.setSubType("F");
             userSubscription.setEntryTs(Instant.now());
+            userSubscription.setRCount(0);
             
             usersubRepo.save(userSubscription);
             
+            
+            Optional<MasUser> refuserData=userRepo.findByRefCode(model.getRef());
+            if(refuserData.isPresent()) {
+            	 UserSubscription refuserSubscription=usersubRepo.findByUuid(refuserData.get().getUuid()).get();
+                 
+                 if(!"F".equals(refuserSubscription.getSubType()) && refuserSubscription.getRCount()<3){
+                 	refuserSubscription.setRCount(refuserSubscription.getRCount()+1);
+                 	refuserSubscription.setTCount(Math.max(0, refuserSubscription.getTCount() - 1));
+                 	usersubRepo.save(refuserSubscription);
+                 }
+            }
+           
             
             return response.AppResponse("RegSuccess", null,null);
 
@@ -468,6 +493,8 @@ public class AuthServiceNew {
             profile.setCity(userData.getUserBranch());
             profile.setSubName(masSub.getSubName());
             profile.setIntCount(usesubData.getCount());
+            profile.setRefCount(usesubData.getRCount());
+            profile.setRef(userData.getRefCode());
             profile.setTCount(masSub.getLimit()-usesubData.getTCount());
             profile.setCreationData(userData.getEntryTs());
             

@@ -351,7 +351,8 @@ public class GeminiService {
             
             Return ONLY the raw JSON. Do not include markdown formatting or code blocks and as the answers are 
             from spoke mode so no code snippet couldbe given and also spelling mistake checking is 
-            not required and also catch similar speak words.
+            not required and also catch similar speak words also auto fix gramatical mistake dont low score a canditate for 
+                                      grammatical mistake. Take autocoreect words if grammatical mistake.
             """, qnaHistoryJson);
 
         GenerateContentConfig config = GenerateContentConfig.builder()

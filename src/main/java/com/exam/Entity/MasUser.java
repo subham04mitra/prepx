@@ -41,6 +41,9 @@ public class MasUser {
 
     @Field("user_email")
     private String userEmail;
+    
+    @Field("ref_code")
+    private String refCode;
 
     @Field("user_mobile")
     private String userMobile;

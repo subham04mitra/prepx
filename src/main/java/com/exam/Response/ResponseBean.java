@@ -107,6 +107,10 @@ public class ResponseBean {
             case "Found":
                 response.setCode("400");
                 return new ResponseEntity<>(response, HttpStatus.ALREADY_REPORTED);
+            case "Exists":
+                response.setCode("208");
+                response.setMessage("Email or Mobile Exists");
+                return new ResponseEntity<>(response, HttpStatus.ALREADY_REPORTED);
             default:
                 response.setCode("400");
                 response.setMessage("Unknown type");

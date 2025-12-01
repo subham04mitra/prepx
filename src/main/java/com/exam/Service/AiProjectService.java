@@ -103,6 +103,9 @@ public class AiProjectService {
 							data3=geminiService.askGeminiForJDQuestions(model.getLevel(), model.getJob_description(),userSubType);
 						
 //							
+							for (String item : data2) {
+								data3.add(item);
+							}
 							for (String item : data) {
 								data3.add(item);
 							}

@@ -27,6 +27,9 @@ public class UserSubscription {
     @Field("tcount")
     private int tCount;
     
+    @Field("rcount")
+    private int rCount;
+    
     @Field("entry_ts")
     private Instant entryTs;
 	
