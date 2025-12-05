@@ -24,6 +24,9 @@ public class UserSubscription {
     @Field("count")
     private int count;
     
+    @Field("coin")
+    private int coin;
+    
     @Field("tcount")
     private int tCount;
     

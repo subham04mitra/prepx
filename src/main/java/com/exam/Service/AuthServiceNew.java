@@ -223,23 +223,36 @@ public class AuthServiceNew {
             userSubscription.setUuid(model.getUuid());
             userSubscription.setSubType("F");
             userSubscription.setEntryTs(Instant.now());
+            
             userSubscription.setRCount(0);
             
-            usersubRepo.save(userSubscription);
             
+         
             
+            if(model.getRef()!="") {
             Optional<MasUser> refuserData=userRepo.findByRefCode(model.getRef());
+            
             if(refuserData.isPresent()) {
+            	 userSubscription.setCoin(2);
+            	 usersubRepo.save(userSubscription);
             	 UserSubscription refuserSubscription=usersubRepo.findByUuid(refuserData.get().getUuid()).get();
-                 
+            	 System.out.println(refuserSubscription);
                  if(!"F".equals(refuserSubscription.getSubType()) && refuserSubscription.getRCount()<3){
                  	refuserSubscription.setRCount(refuserSubscription.getRCount()+1);
-                 	refuserSubscription.setTCount(Math.max(0, refuserSubscription.getTCount() - 1));
+//                 	refuserSubscription.setTCount(Math.max(0, refuserSubscription.getTCount() - 1));
+                 	refuserSubscription.setTCount(refuserSubscription.getTCount() - 1);
+                 	refuserSubscription.setCoin(refuserSubscription.getCoin()+2);
+                 	
+                 	
                  	usersubRepo.save(refuserSubscription);
                  }
             }
            
-            
+            }
+            else {
+            	userSubscription.setCoin(0);
+            	 usersubRepo.save(userSubscription);
+            }
             return response.AppResponse("RegSuccess", null,null);
 
         } catch (Exception ex) {
@@ -497,7 +510,7 @@ public class AuthServiceNew {
             profile.setRef(userData.getRefCode());
             profile.setTCount(masSub.getLimit()-usesubData.getTCount());
             profile.setCreationData(userData.getEntryTs());
-            
+            profile.setCoin(usesubData.getCoin());
           
             return response.AppResponse("Success", null,profile);
 

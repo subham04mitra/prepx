@@ -28,4 +28,5 @@ public class ProfileDTO {
 	private Instant creationData;
 	private int intCount;
 	private int tCount;
+	private int coin;
 }
