@@ -2,34 +2,50 @@ package com.exam.Service;
 
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
-
+import java.util.stream.IntStream;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.exam.Entity.DailyQs;
 import com.exam.Entity.InterviewFeedback;
+import com.exam.Entity.Leaderboard;
 import com.exam.Entity.MasSubscription;
 import com.exam.Entity.MasUser;
 import com.exam.Entity.MasUserToken;
+import com.exam.Entity.TodayQs;
 import com.exam.Entity.UserFeedback;
+import com.exam.Entity.UserSubmission;
 import com.exam.Entity.UserSubscription;
 import com.exam.Exception.GlobalExceptionHandler;
+import com.exam.Repositry.DailyQsRepositry;
 import com.exam.Repositry.InterviewFeedbackRepository;
+import com.exam.Repositry.LeaderboardRepository;
 import com.exam.Repositry.MasSubscriptionRepository;
 import com.exam.Repositry.MasUserRepository;
 import com.exam.Repositry.MasUserTokenRepository;
+import com.exam.Repositry.TodayQsRepository;
 import com.exam.Repositry.UserFeedbackRepository;
+import com.exam.Repositry.UserSubmissionRepository;
 import com.exam.Repositry.UserSubscriptionRepository;
 import com.exam.Response.ApiResponses;
 import com.exam.Response.ResponseBean;
 import com.exam.Security.TokenService;
 import com.exam.reqDTO.CommonReqModel;
+import com.exam.resDTO.DailyQsDTO;
+import com.exam.resDTO.LeaderboardDTO;
 import com.exam.resDTO.LoginResModel;
 import com.exam.resDTO.ProfileDTO;
 
@@ -50,6 +66,18 @@ public class AuthServiceNew {
     
     @Autowired
     MasSubscriptionRepository massubRepo;
+    
+    @Autowired
+    TodayQsRepository todayQsRepo;
+    
+    @Autowired
+    UserSubmissionRepository submissionRepo;
+    
+    @Autowired
+    DailyQsRepositry qsRepo;
+    
+    @Autowired
+    LeaderboardRepository leaderoardRepo;
 
     @Autowired
     TokenService tokenservice;
@@ -227,7 +255,11 @@ public class AuthServiceNew {
             userSubscription.setRCount(0);
             
             
-         
+            Leaderboard lBoardData=new Leaderboard();
+            lBoardData.setUuid(model.getUuid());
+            lBoardData.setScore(0);
+            
+            leaderoardRepo.save(lBoardData);
             
             if(model.getRef()!="") {
             Optional<MasUser> refuserData=userRepo.findByRefCode(model.getRef());
@@ -389,7 +421,129 @@ public class AuthServiceNew {
 	    }
 	}
 
+ public ResponseEntity<ApiResponses> saveDailQSService(ResponseBean response, CommonReqModel model, String authToken) {
+
+	    try {
+	        if (authToken == null || authToken.isBlank()) {
+	            return response.AppResponse("Nulltype", null, null);
+	        }
+
+	        if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+	            throw new GlobalExceptionHandler.ExpiredException();
+	        }
+
+	        System.err.println(model.getAnswer());
+	        
+	        String uuid = tokenservice.decodeJWT(authToken)[1];
+
+	        
+	        UserSubmission userFeedback=new UserSubmission();
+	        
+	        userFeedback.setUuid(uuid);
+	        userFeedback.setQsId(model.getQsId());
+	        userFeedback.setDate(Instant.now());
+
+	        submissionRepo.save(userFeedback);
+
+	        Optional<DailyQs> qdata = qsRepo.findByQsId(model.getQsId());
+	        
+	        if(qdata.get().getAnswer().equals(model.getAnswer())) {
+	        	  
+	            Leaderboard lBoardData=leaderoardRepo.findByUuid(uuid).get();
+	            lBoardData.setScore(lBoardData.getScore()+5);
+	            
+	            leaderoardRepo.save(lBoardData);
+	        	
+	        }
+	        
+	        return response.AppResponse("fSuccess",
+	                null,
+	                null);
+
+	    } catch (Exception ex) {
+	        ex.printStackTrace();
+	        throw ex;
+	    }
+	} 
  
+ 
+ public ResponseEntity<ApiResponses> leaserboardService(ResponseBean response, String authToken) {
+
+	    try {
+	        if (authToken == null || authToken.isBlank()) {
+	            return response.AppResponse("Nulltype", null, null);
+	        }
+
+	        if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+	            throw new GlobalExceptionHandler.ExpiredException();
+	        }
+
+	        String[] tdata = tokenservice.decodeJWT(authToken);
+	        String uuid = tdata[1];
+
+	        // 1) Fetch top 10
+	        Pageable top10 = PageRequest.of(0, 10);
+	        List<Leaderboard> result = leaderoardRepo.findAllByOrderByScoreDesc(top10);
+
+	        // UUID list of top 10
+	        List<String> uuidList = result.stream()
+	                .map(Leaderboard::getUuid)
+	                .collect(Collectors.toList());
+
+	        // 2) Prepare final response list
+	        List<LeaderboardDTO> resData = new ArrayList<>();
+
+	        // 3) Add top 10 users
+	        int rank = 1;
+	        for (Leaderboard row : result) {
+
+	            Optional<MasUser> userOpt =
+	                    userRepo.findByUuidAndActiveFlag(row.getUuid(), "Y");
+
+	            if (userOpt.isEmpty()) continue;
+
+	            LeaderboardDTO dto = new LeaderboardDTO();
+	            dto.setName(userOpt.get().getUserName());
+	            dto.setScore(row.getScore());
+	            dto.setRank(rank);
+
+	            resData.add(dto);
+	            rank++;
+	        }
+
+	        // 4) Add current user if not in top 10
+	        if (!uuidList.contains(uuid)) {
+
+	            // Fetch current user score
+	            Leaderboard currentUser = leaderoardRepo.findByUuid(uuid).get();
+
+	            // Fetch user details
+	            Optional<MasUser> userOpt =
+	                    userRepo.findByUuidAndActiveFlag(uuid, "Y");
+
+	            // CALCULATE GLOBAL RANK
+	            List<Leaderboard> all = leaderoardRepo.findAllByOrderByScoreDesc(PageRequest.of(0, 1000));
+	            int userRank = IntStream.range(0, all.size())
+	                    .filter(i -> all.get(i).getUuid().equals(uuid))
+	                    .findFirst()
+	                    .orElse(-1) + 1;
+
+	            LeaderboardDTO dto = new LeaderboardDTO();
+	            dto.setName(userOpt.get().getUserName());
+	            dto.setScore(currentUser.getScore());
+	            dto.setRank(userRank);
+
+	            resData.add(dto);
+	        }
+
+	        return response.AppResponse("Success", null, resData);
+
+	    } catch (Exception ex) {
+	        ex.printStackTrace();
+	        throw ex;
+	    }
+	}
+
  
  public ResponseEntity<ApiResponses> checksubscribeService(ResponseBean response, CommonReqModel model, String authToken) {
 
@@ -553,5 +707,177 @@ public class AuthServiceNew {
         }
     }
     
+    public ResponseEntity<ApiResponses> viewDailyQSService(ResponseBean response, String authToken) {
+
+        try {
+
+            if (authToken == null || authToken.isBlank()) {
+                return response.AppResponse("Nulltype", null, null);
+            }
+
+            if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+                throw new GlobalExceptionHandler.ExpiredException();
+            }
+
+            String[] tdata = tokenservice.decodeJWT(authToken);
+            String uuid = tdata[1];
+
+            Instant todayStart = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+            Instant todayEnd = LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+            List<DailyQsDTO> dailyQs = new ArrayList<>();
+
+            List<String> tech = List.of("Java", "SQL", "Python", "JavaScript");
+
+            // ================================
+            // 1️⃣ CHECK IF TODAY’s QS ALREADY EXISTS
+            // ================================
+            List<TodayQs> todayQsList = todayQsRepo.findByDateBetween(todayStart, todayEnd);
+
+            List<Long> qsIdsForToday = new ArrayList<>();
+            if (!todayQsList.isEmpty()) {
+                qsIdsForToday = todayQsList.stream()
+                        .map(TodayQs::getQsId)
+                        .collect(Collectors.toList());
+            }
+
+            // ================================
+            // 2️⃣ IF NOT EXISTS → GENERATE RANDOM 4 QUESTIONS & SAVE
+            // ================================
+            if (qsIdsForToday.isEmpty()) {
+
+                for (String lang : tech) {
+                    DailyQs qs = qsRepo.findRandomOneByLang(lang).get(0);
+
+                    TodayQs todayQs = new TodayQs();
+                    todayQs.setQsId(qs.getQsId());
+                    todayQs.setDate(Instant.now());
+
+                    todayQsRepo.save(todayQs);
+
+                    qsIdsForToday.add(qs.getQsId());
+                }
+            }
+//            System.out.println(qsIdsForToday);
+            // ================================
+            // 3️⃣ FETCH USER SUBMISSION FOR TODAY
+            // ================================
+            List<UserSubmission> submissionDataToday =
+                    submissionRepo.findByUuidAndDateBetween(uuid, todayStart, todayEnd);
+//            System.out.println(submissionDataToday);
+            
+            Set<Long> submittedTodayIds = submissionDataToday.stream()
+                    .map(UserSubmission::getQsId)
+                    .collect(Collectors.toSet());
+//            System.err.println(submittedTodayIds);
+            // ================================
+            // 4️⃣ PREPARE RESPONSE USING THE TODAY’s QS
+            // ================================
+            for (Long qsId : qsIdsForToday) {
+                Optional<DailyQs> qdata = qsRepo.findByQsId(qsId);
+//                System.out.println(qdata);
+                if (qdata.isEmpty()) continue;
+
+                DailyQs qs = qdata.get();
+                DailyQsDTO dto = new DailyQsDTO();
+
+                dto.setId(qs.getQsId());
+                dto.setLang(qs.getLang());
+                dto.setQuestion(qs.getQuestion());
+                dto.setOptions(new String[]{
+                    qs.getOption1(),
+                    qs.getOption2(),
+                    qs.getOption3(),
+                    qs.getOption4()
+                });
+
+                // Mark submit Y/N FOR TODAY
+                if (submittedTodayIds.contains(qs.getQsId())) {
+                    dto.setSubmit("Y");
+                } else {
+                    dto.setSubmit("N");
+                }
+
+                dailyQs.add(dto);
+            }
+
+            if (!dailyQs.isEmpty()) {
+                return response.AppResponse("Success", null, dailyQs);
+            } else {
+                return response.AppResponse("Notfound", null, null);
+            }
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw ex;
+        }
+    }
+
     
+//    public ResponseEntity<ApiResponses> viewDailyQSService(ResponseBean response, String authToken) {
+//
+//        try {
+//        	if(authToken.isBlank() || authToken.isEmpty()) {
+//				return response.AppResponse("Nulltype", null, null);
+//			}
+//			
+//			if(!tokenservice.validateTokenAndReturnBool(authToken)) {
+//				throw new GlobalExceptionHandler.ExpiredException();
+//			}
+//            
+//			String[] tdata = tokenservice.decodeJWT(authToken);
+//            String uuid = tdata[1];
+//            
+//            List<DailyQsDTO> dailyQs=new ArrayList<>();
+//            
+//            List<String> tech = List.of("Java", "SQL", "Python", "JavaScript");
+//
+//            List<UserSubmission> submissionData = submissionRepo.findByUuid(uuid);
+//            Set<Long> submittedQuestionIds = submissionData.stream()
+//                    .map(sub -> sub.getQsId())
+//                    .collect(Collectors.toSet());
+//
+//            for (String lang : tech) {
+//                DailyQs qs = qsRepo.findRandomOneByLang(lang).get(0);
+//                DailyQsDTO qsDTO = new DailyQsDTO();
+//                qsDTO.setId(Long.parseLong(qs.getQsId()));
+//                qsDTO.setLang(qs.getLang());
+//                qsDTO.setQuestion(qs.getQuestion());
+//
+//                // Set options
+//                String[] options = new String[] {
+//                    qs.getOption1(),
+//                    qs.getOption2(),
+//                    qs.getOption3(),
+//                    qs.getOption4()
+//                };
+//                qsDTO.setOptions(options);
+//                
+//                
+//                
+//                // Mark submit as "Y" if user has already submitted
+//                if (submittedQuestionIds.contains(Long.parseLong(qs.getQsId()))) {
+//                    qsDTO.setSubmit("Y");
+//                } else {
+//                    qsDTO.setSubmit("N");
+//                }
+//
+//                dailyQs.add(qsDTO);
+//            }
+//
+//            if (!dailyQs.isEmpty()) {
+//                return response.AppResponse("Success", null, dailyQs);
+//            }
+//
+//          else {
+//        	  return response.AppResponse("Notfound", null,null);
+//          }
+//            
+//           
+//
+//        } catch (Exception ex) {
+//            ex.printStackTrace();
+//            throw ex;
+//        }
+//    }
 }

@@ -33,6 +33,8 @@ public class CommonReqModel {
 	private int rating;
 	private String feedback;
 	private String ref;
+	private String answer;
+	private long qsId;
 	private String job_description;
 	private List<QA> res;
 	

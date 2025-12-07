@@ -75,6 +75,31 @@ public class ApiController {
 		
 		return finalResponse;
 }
+	
+	
+	@GetMapping("/leaderboard")
+	public ResponseEntity<ApiResponses> LeaderBoardController(@RequestHeader("Authorization") String authorizationHeader){
+		String authToken = authorizationHeader.split(" ")[1];
+		ResponseEntity<ApiResponses> finalResponse;
+		
+		finalResponse=authserv.leaserboardService(responseBean,authToken);
+		
+		return finalResponse;
+}
+	
+	
+	@GetMapping("/daily-qs")
+	public ResponseEntity<ApiResponses> GetDailyQSController(@RequestHeader("Authorization") String authorizationHeader){
+		String authToken = authorizationHeader.split(" ")[1];
+		ResponseEntity<ApiResponses> finalResponse;
+		
+		finalResponse=authserv.viewDailyQSService(responseBean,authToken);
+		
+		return finalResponse;
+}
+	
+	
+	
 	@PostMapping("/save-feedback")
 	public ResponseEntity<ApiResponses> saveUserFeedbackController(@RequestBody CommonReqModel model,@RequestHeader("Authorization") String authorizationHeader){
 		String authToken = authorizationHeader.split(" ")[1];
@@ -85,6 +110,17 @@ public class ApiController {
 		return finalResponse;
 }
 	
+	
+
+	@PostMapping("/save-dailyqs")
+	public ResponseEntity<ApiResponses> saveDailyQsController(@RequestBody CommonReqModel model,@RequestHeader("Authorization") String authorizationHeader){
+		String authToken = authorizationHeader.split(" ")[1];
+		ResponseEntity<ApiResponses> finalResponse;
+		
+		finalResponse=authserv.saveDailQSService(responseBean,model,authToken);
+		
+		return finalResponse;
+}
 	
 	
 	@PostMapping("/create-order")
