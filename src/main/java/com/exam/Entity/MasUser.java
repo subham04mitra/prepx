@@ -27,7 +27,7 @@ public class MasUser {
     @Field("user_role")
     private String userRole;
 
-    @Field("user_inst")
+    @Field("desg")
     private String userInst;
 
     @Field("user_branch")
@@ -48,7 +48,10 @@ public class MasUser {
     @Field("user_mobile")
     private String userMobile;
 
-    @Field("stream")
+    @Field("exp")
     private String stream;
+    
+    @Field("is_profile_complete")
+    private boolean complete;
 
 }

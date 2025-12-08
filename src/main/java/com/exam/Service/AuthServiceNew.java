@@ -27,6 +27,7 @@ import com.exam.Entity.MasUser;
 import com.exam.Entity.MasUserToken;
 import com.exam.Entity.TodayQs;
 import com.exam.Entity.UserFeedback;
+import com.exam.Entity.UserProfile;
 import com.exam.Entity.UserSubmission;
 import com.exam.Entity.UserSubscription;
 import com.exam.Exception.GlobalExceptionHandler;
@@ -38,6 +39,7 @@ import com.exam.Repositry.MasUserRepository;
 import com.exam.Repositry.MasUserTokenRepository;
 import com.exam.Repositry.TodayQsRepository;
 import com.exam.Repositry.UserFeedbackRepository;
+import com.exam.Repositry.UserProfileRepository;
 import com.exam.Repositry.UserSubmissionRepository;
 import com.exam.Repositry.UserSubscriptionRepository;
 import com.exam.Response.ApiResponses;
@@ -57,6 +59,9 @@ public class AuthServiceNew {
     
     @Autowired
     UserSubscriptionRepository usersubRepo;
+    
+    @Autowired
+    UserProfileRepository userprofRepo;
     
     @Autowired
     UserFeedbackRepository userfeedbackRepo;
@@ -110,6 +115,7 @@ public class AuthServiceNew {
             user.setUser_email(userDoc.getUserEmail());
             user.setUser_branch(userDoc.getStream());
             user.setUser_inst(userDoc.getUserInst());
+            user.setComplete(userDoc.isComplete());
 
             String token = tokenservice.generateToken(model.getUuid(), userDoc.getUserRole());
 
@@ -243,7 +249,7 @@ public class AuthServiceNew {
             userData.setEntryTs(Instant.now());
             userData.setUuid(model.getUuid());
             userData.setRefCode(refCode);
-            
+            userData.setComplete(false);            
             
             userRepo.save(userData);
             
@@ -287,6 +293,226 @@ public class AuthServiceNew {
             }
             return response.AppResponse("RegSuccess", null,null);
 
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw ex;
+        }
+    }
+    
+    
+    public ResponseEntity<ApiResponses> completeProfileService(ResponseBean response, CommonReqModel model,String authToken) {
+
+        try {
+           if(authToken.isBlank() || authToken.isEmpty()) {
+			return response.AppResponse("Nulltype", null, null);
+		}
+		
+		if(!tokenservice.validateTokenAndReturnBool(authToken)) {
+			throw new GlobalExceptionHandler.ExpiredException();
+		}
+        	String[] tdata = tokenservice.decodeJWT(authToken);
+            String uuid = tdata[1];
+            
+          
+            Optional<UserProfile> profData=userprofRepo.findByUuid(uuid);
+            
+            if(profData.isPresent()) {
+            	UserProfile userData =profData.get();
+            	userData.setFirstName(model.getFirstName());
+            	userData.setLastName(model.getLastName());
+            	userData.setHeadline(model.getHeadline());
+            	userData.setEmail(model.getEmail());
+            	userData.setPhone(model.getPhone());
+            	userData.setCity(model.getCity());
+            	userData.setCountry(model.getCountry());
+
+            	userData.setSummary(model.getSummary());
+            	userData.setSkills(model.getSkills());
+
+            	// ---------- Socials ----------
+            	if (model.getSocials() != null) {
+                    userData.setSocials(
+                            model.getSocials()
+                                    .stream()
+                                    .map(s -> new UserProfile.Social(s.getNetwork(), s.getUrl()))
+                                    .toList()
+                    );
+                }
+
+                // ---------- Experience ----------
+                if (model.getExperience() != null) {
+                    userData.setExperience(
+                            model.getExperience()
+                                    .stream()
+                                    .map(e -> new UserProfile.Experience(
+                                            e.getCompanyName(),
+                                            e.getJobTitle(),
+                                            e.getStartDate(),
+                                            e.getEndDate(),
+                                            e.getDescription()
+                                    ))
+                                    .toList()
+                    );
+                }
+
+                // ---------- Education ----------
+                if (model.getEducation() != null) {
+                    userData.setEducation(
+                            model.getEducation()
+                                    .stream()
+                                    .map(ed -> new UserProfile.Education(
+                                            ed.getInstitutionName(),
+                                            ed.getDegree(),
+                                            ed.getFieldOfStudy(),
+                                            ed.getStartDate(),
+                                            ed.getEndDate(),
+                                            ed.getScore()
+                                    ))
+                                    .toList()
+                    );
+                }
+
+                // ---------- Projects ----------
+                if (model.getProjects() != null) {
+                    userData.setProjects(
+                            model.getProjects()
+                                    .stream()
+                                    .map(p -> new UserProfile.Project(
+                                            p.getTitle(),
+                                            p.getTechStack(),
+                                            p.getProjectUrl(),
+                                            p.getRepoUrl(),
+                                            p.getDescription()
+                                    ))
+                                    .toList()
+                    );
+                }
+
+            	// ---------- Resume ----------
+            	userData.setResume(model.getResume());
+            	userData.setProfilePic(model.getProfilePic());
+            	
+            	userprofRepo.save(userData);
+            }
+            else {
+            	
+            	UserProfile userData = new UserProfile();
+
+            	userData.setUuid(uuid);
+
+            	userData.setFirstName(model.getFirstName());
+            	userData.setLastName(model.getLastName());
+            	userData.setHeadline(model.getHeadline());
+            	userData.setEmail(model.getEmail());
+            	userData.setPhone(model.getPhone());
+            	userData.setCity(model.getCity());
+            	userData.setCountry(model.getCountry());
+
+            	userData.setSummary(model.getSummary());
+            	userData.setSkills(model.getSkills());
+
+            	// ---------- Socials ----------
+            	if (model.getSocials() != null) {
+                    userData.setSocials(
+                            model.getSocials()
+                                    .stream()
+                                    .map(s -> new UserProfile.Social(s.getNetwork(), s.getUrl()))
+                                    .toList()
+                    );
+                }
+
+                // ---------- Experience ----------
+                if (model.getExperience() != null) {
+                    userData.setExperience(
+                            model.getExperience()
+                                    .stream()
+                                    .map(e -> new UserProfile.Experience(
+                                            e.getCompanyName(),
+                                            e.getJobTitle(),
+                                            e.getStartDate(),
+                                            e.getEndDate(),
+                                            e.getDescription()
+                                    ))
+                                    .toList()
+                    );
+                }
+
+                // ---------- Education ----------
+                if (model.getEducation() != null) {
+                    userData.setEducation(
+                            model.getEducation()
+                                    .stream()
+                                    .map(ed -> new UserProfile.Education(
+                                            ed.getInstitutionName(),
+                                            ed.getDegree(),
+                                            ed.getFieldOfStudy(),
+                                            ed.getStartDate(),
+                                            ed.getEndDate(),
+                                            ed.getScore()
+                                    ))
+                                    .toList()
+                    );
+                }
+
+                // ---------- Projects ----------
+                if (model.getProjects() != null) {
+                    userData.setProjects(
+                            model.getProjects()
+                                    .stream()
+                                    .map(p -> new UserProfile.Project(
+                                            p.getTitle(),
+                                            p.getTechStack(),
+                                            p.getProjectUrl(),
+                                            p.getRepoUrl(),
+                                            p.getDescription()
+                                    ))
+                                    .toList()
+                    );
+                }
+
+            	// ---------- Resume ----------
+            	userData.setResume(model.getResume());
+            	userData.setProfilePic(model.getProfilePic());
+            	userprofRepo.save(userData);
+            	
+            	MasUser user=userRepo.findByUuidAndActiveFlag(uuid, "Y").get();
+            	
+            	user.setComplete(true);
+            	
+            	userRepo.save(user);
+            	
+            }
+            
+            return response.AppResponse("RegSuccess", null,null);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw ex;
+        }
+    }
+    
+    public ResponseEntity<ApiResponses> getcompleteProfileService(ResponseBean response,String authToken) {
+
+        try {
+           if(authToken.isBlank() || authToken.isEmpty()) {
+			return response.AppResponse("Nulltype", null, null);
+		}
+		
+		if(!tokenservice.validateTokenAndReturnBool(authToken)) {
+			throw new GlobalExceptionHandler.ExpiredException();
+		}
+        	String[] tdata = tokenservice.decodeJWT(authToken);
+            String uuid = tdata[1];
+            
+          
+            Optional<UserProfile> profData=userprofRepo.findByUuid(uuid);
+            
+            if(profData.isPresent()) {            
+            return response.AppResponse("Success", null,profData.get());
+            }
+            else {
+            	 return response.AppResponse("Notfound", null,null);
+            }
         } catch (Exception ex) {
             ex.printStackTrace();
             throw ex;

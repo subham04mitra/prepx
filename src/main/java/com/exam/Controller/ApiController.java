@@ -110,7 +110,26 @@ public class ApiController {
 		return finalResponse;
 }
 	
+	@PostMapping("/save-profile")
+	public ResponseEntity<ApiResponses> compeletProfileController(@RequestBody CommonReqModel model,@RequestHeader("Authorization") String authorizationHeader){
+		String authToken = authorizationHeader.split(" ")[1];
+		ResponseEntity<ApiResponses> finalResponse;
+		
+		finalResponse=authserv.completeProfileService(responseBean,model,authToken);
+		
+		return finalResponse;
+}
 	
+	
+	@GetMapping("/get-profile")
+	public ResponseEntity<ApiResponses> getcompeletProfileController(@RequestHeader("Authorization") String authorizationHeader){
+		String authToken = authorizationHeader.split(" ")[1];
+		ResponseEntity<ApiResponses> finalResponse;
+		
+		finalResponse=authserv.getcompleteProfileService(responseBean,authToken);
+		
+		return finalResponse;
+}
 
 	@PostMapping("/save-dailyqs")
 	public ResponseEntity<ApiResponses> saveDailyQsController(@RequestBody CommonReqModel model,@RequestHeader("Authorization") String authorizationHeader){

@@ -18,4 +18,5 @@ public class LoginResModel {
 	private String user_inst;
 	private String user_branch;
 	private String jwt_token;
+	private boolean complete;
 }
