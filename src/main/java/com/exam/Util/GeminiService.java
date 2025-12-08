@@ -27,7 +27,7 @@ public class GeminiService {
     private final ObjectMapper objectMapper;
     
     // Using the modern, fast model
-    private static final String MODEL_NAME = "gemini-2.0-flash";
+    private static final String MODEL_NAME = "gemini-2.5-flash";
 
    
     public GeminiService(@Value("${google.api.key}") String apiKey) {
