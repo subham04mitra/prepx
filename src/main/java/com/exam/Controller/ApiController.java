@@ -1,5 +1,6 @@
 package com.exam.Controller;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.json.JSONObject;
@@ -15,9 +16,11 @@ import org.springframework.web.bind.annotation.RestController;
 import com.exam.Response.ApiResponses;
 import com.exam.Response.ResponseBean;
 import com.exam.Service.AuthServiceNew;
+import com.exam.Util.RazorpaySignature;
 import com.exam.reqDTO.CommonReqModel;
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
+import com.razorpay.Utils;
 
 import org.springframework.beans.factory.annotation.Value;
 @RestController
@@ -36,12 +39,12 @@ public class ApiController {
 	AuthServiceNew authserv;
 	ResponseBean responseBean=new ResponseBean();
 	
-	@PostMapping("/subscribe")
-	public ResponseEntity<ApiResponses> subscribeController(@RequestBody CommonReqModel model,@RequestHeader("Authorization") String authorizationHeader){
+	@GetMapping("/bill-list")
+	public ResponseEntity<ApiResponses> billListController(@RequestHeader("Authorization") String authorizationHeader){
 		String authToken = authorizationHeader.split(" ")[1];
 		ResponseEntity<ApiResponses> finalResponse;
 		
-		finalResponse=authserv.subscribeService(responseBean,model,authToken);
+		finalResponse=authserv.getbillListService(responseBean,authToken);
 		
 		return finalResponse;
 }
@@ -174,18 +177,28 @@ public class ApiController {
     }
 
     @PostMapping("/verify-payment")
-    public Map<String, String> verifyPayment(@RequestBody Map<String, String> data) {
-        String orderId = data.get("razorpay_order_id");
-        String paymentId = data.get("razorpay_payment_id");
-        String signature = data.get("razorpay_signature");
-        String planId = data.get("planId");
+    public ResponseEntity<ApiResponses> verifyPayment(@RequestBody Map<String, String> data,@RequestHeader("Authorization") String authorizationHeader) {
+    	String authToken = authorizationHeader.split(" ")[1];
+        
+//    	 String authToken = authorizationHeader.split(" ")[1];
 
-        // 1. Verify Signature (Use Utils provided by Razorpay)
-        // boolean isValid = Utils.verifyPaymentSignature(data, RAZORPAY_KEY_SECRET);
-        
-        // 2. If Valid: Update User in Database to 'planId'
-        
-        return Map.of("status", "success");
+    	    String orderId = data.get("razorpay_order_id");
+    	    String paymentId = data.get("razorpay_payment_id");
+    	    String signature = data.get("razorpay_signature");
+    	    String planId = data.get("planId");
+
+    	    Map<String,Object> rzrMap=new HashMap<>();
+    	    rzrMap.put("razorpay_order_id", orderId);
+    	    rzrMap.put("razorpay_payment_id", paymentId);
+    	    rzrMap.put("razorpay_signature", signature);
+    	    rzrMap.put("planId", planId);
+    	    rzrMap.put("amount", data.get("amount"));
+    	    
+//    	    
+    	    ResponseEntity<ApiResponses> finalResponse;
+    	    finalResponse=authserv.subscribeService(responseBean,authToken,rzrMap);
+    	    
+    	    return finalResponse;
     }
 	
 	

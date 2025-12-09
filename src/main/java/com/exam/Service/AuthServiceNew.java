@@ -7,12 +7,14 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +27,7 @@ import com.exam.Entity.Leaderboard;
 import com.exam.Entity.MasSubscription;
 import com.exam.Entity.MasUser;
 import com.exam.Entity.MasUserToken;
+import com.exam.Entity.PaymentData;
 import com.exam.Entity.TodayQs;
 import com.exam.Entity.UserFeedback;
 import com.exam.Entity.UserProfile;
@@ -37,6 +40,7 @@ import com.exam.Repositry.LeaderboardRepository;
 import com.exam.Repositry.MasSubscriptionRepository;
 import com.exam.Repositry.MasUserRepository;
 import com.exam.Repositry.MasUserTokenRepository;
+import com.exam.Repositry.PaymentDataRepository;
 import com.exam.Repositry.TodayQsRepository;
 import com.exam.Repositry.UserFeedbackRepository;
 import com.exam.Repositry.UserProfileRepository;
@@ -45,6 +49,7 @@ import com.exam.Repositry.UserSubscriptionRepository;
 import com.exam.Response.ApiResponses;
 import com.exam.Response.ResponseBean;
 import com.exam.Security.TokenService;
+import com.exam.Util.RazorpaySignature;
 import com.exam.reqDTO.CommonReqModel;
 import com.exam.resDTO.DailyQsDTO;
 import com.exam.resDTO.LeaderboardDTO;
@@ -83,6 +88,9 @@ public class AuthServiceNew {
     
     @Autowired
     LeaderboardRepository leaderoardRepo;
+    
+    @Autowired
+    PaymentDataRepository paymentdataRepo;
 
     @Autowired
     TokenService tokenservice;
@@ -90,6 +98,13 @@ public class AuthServiceNew {
     @Autowired
     InterviewFeedbackRepository interviewFeedbackRepository;
 
+    
+    @Value("${razorpay.key.id}")
+    private String RAZORPAY_KEY_ID;
+
+    @Value("${razorpay.key.secret}")
+    private String RAZORPAY_KEY_SECRET;
+    
     // -------------------------------------------------------------------
     // LOGIN IMPLEMENTATION (MONGO)
     // -------------------------------------------------------------------
@@ -139,7 +154,7 @@ public class AuthServiceNew {
     // -------------------------------------------------------------------
     // REFRESH TOKEN IMPLEMENTATION (MONGO)
     // -------------------------------------------------------------------
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public ResponseEntity<ApiResponses> refreshTokenService(ResponseBean response, String oldToken) {
 
         try {
@@ -216,7 +231,7 @@ public class AuthServiceNew {
     }
     
     
-    
+    @Transactional(rollbackFor = Exception.class)
     public ResponseEntity<ApiResponses> registerService(ResponseBean response, CommonReqModel model) {
 
         try {
@@ -407,7 +422,7 @@ public class AuthServiceNew {
             	userData.setPhone(model.getPhone());
             	userData.setCity(model.getCity());
             	userData.setCountry(model.getCountry());
-
+            	
             	userData.setSummary(model.getSummary());
             	userData.setSkills(model.getSkills());
 
@@ -520,6 +535,36 @@ public class AuthServiceNew {
     }
     
     
+    public ResponseEntity<ApiResponses> getbillListService(ResponseBean response,String authToken) {
+
+        try {
+           if(authToken.isBlank() || authToken.isEmpty()) {
+			return response.AppResponse("Nulltype", null, null);
+		}
+		
+		if(!tokenservice.validateTokenAndReturnBool(authToken)) {
+			throw new GlobalExceptionHandler.ExpiredException();
+		}
+        	String[] tdata = tokenservice.decodeJWT(authToken);
+            String uuid = tdata[1];
+            
+          
+            List<PaymentData> billData=paymentdataRepo.findByUuid(uuid);
+            
+            if(!billData.isEmpty()) {            
+            return response.AppResponse("Success", null,billData);
+            }
+            else {
+            	 return response.AppResponse("Notfound", null,null);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw ex;
+        }
+    }
+    
+    
+    
     public ResponseEntity<ApiResponses> checkuuidService(ResponseBean response, CommonReqModel model) {
 
         try {
@@ -542,8 +587,9 @@ public class AuthServiceNew {
             throw ex;
         }
     }
-    
- public ResponseEntity<ApiResponses> subscribeService(ResponseBean response, CommonReqModel model, String authToken) {
+    @Transactional(rollbackFor = Exception.class)
+ public ResponseEntity<ApiResponses> subscribeService(ResponseBean response, 
+ String authToken,Map<String,Object> rzrData) {
 
     try {
         if (authToken == null || authToken.isBlank()) {
@@ -554,12 +600,35 @@ public class AuthServiceNew {
             throw new GlobalExceptionHandler.ExpiredException();
         }
 
+        System.err.println(rzrData);
+        
+        String orderId = (String) rzrData.get("razorpay_order_id");
+	    String paymentId = (String) rzrData.get("razorpay_payment_id");
+	    String signature = (String) rzrData.get("razorpay_signature");
+	    String planId = (String) rzrData.get("planId");
+	    String amount = (String) rzrData.get("amount");
+	    
+	    boolean isValid = RazorpaySignature.verifySignature(
+	            orderId,
+	            paymentId,
+	            signature,
+	            RAZORPAY_KEY_SECRET
+	    );
+	    
+	    if(!isValid) {
+	    	 return response.AppResponse("TryAgain",
+	                 null,
+	                 null);
+	    }
+	    
+	    
+	    
         String uuid = tokenservice.decodeJWT(authToken)[1];
 
         UserSubscription userSub = usersubRepo.findByUuid(uuid).get();
         MasSubscription currentSub = massubRepo.findBySubType(userSub.getSubType()).get();
 
-        String newSubType = model.getType();
+        String newSubType = planId;
         MasSubscription requestedSub = massubRepo.findBySubType(newSubType).get();
 
         int userUsedCount = userSub.getTCount();
@@ -593,6 +662,16 @@ public class AuthServiceNew {
             userSub.setTCount(0);
             usersubRepo.save(userSub);
 
+            PaymentData payment=new PaymentData();
+    	    payment.setUuid(uuid);
+    	    payment.setEntryTs(Instant.now());
+    	    payment.setOrderId(orderId);
+    	    payment.setPaymentId(paymentId);
+    	    payment.setSignature(signature);
+    	    payment.setAmount(amount);
+            
+    	    
+    	    paymentdataRepo.save(payment);
             return response.AppResponse("ReSubscribed",
                     null,
                     currentSub.getSubName());
@@ -602,7 +681,16 @@ public class AuthServiceNew {
         userSub.setSubType(newSubType);
         userSub.setTCount(0);
         usersubRepo.save(userSub);
-
+        
+        PaymentData payment=new PaymentData();
+	    payment.setUuid(uuid);
+	    payment.setEntryTs(Instant.now());
+	    payment.setOrderId(orderId);
+	    payment.setPaymentId(paymentId);
+	    payment.setSignature(signature);
+	    payment.setAmount(amount);
+	    paymentdataRepo.save(payment);
+        
         return response.AppResponse("ReSubscribed",
                 null,
                 requestedSub.getSubName());
