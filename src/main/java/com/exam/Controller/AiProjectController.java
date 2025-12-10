@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.exam.Response.ApiResponses;
 import com.exam.Response.ResponseBean;
 import com.exam.Service.AiProjectService;
+import com.exam.Service.AuthServiceNew;
 import com.exam.Util.GeminiService;
 import com.exam.reqDTO.CommonReqModel;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -27,7 +28,8 @@ public class AiProjectController {
 	 GeminiService geminiService;
 
 	  
-	
+	@Autowired
+	AuthServiceNew authserv;
 	@Autowired
 	AiProjectService aiservice;
 	ResponseBean responseBean=new ResponseBean();
@@ -45,6 +47,19 @@ public class AiProjectController {
 		return finalResponse;	
 
 		}
+	
+	
+	
+	
+	@PostMapping("/get-portfolio-by-slug")
+	public ResponseEntity<ApiResponses> getPortfolioController(@RequestBody CommonReqModel model){
+		
+		ResponseEntity<ApiResponses> finalResponse;
+		
+		finalResponse=authserv.getPortfolioService(model,responseBean);
+		
+		return finalResponse;
+}
 	
 	@PostMapping("/Submit-Ans")
 	public ResponseEntity<?> GetFeedback(@RequestBody CommonReqModel model,@RequestHeader("Authorization") String authorizationHeader){

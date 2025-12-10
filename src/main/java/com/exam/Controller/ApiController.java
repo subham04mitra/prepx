@@ -124,6 +124,19 @@ public class ApiController {
 }
 	
 	
+	
+	
+	@PostMapping("/save-portfolio")
+	public ResponseEntity<ApiResponses> savePortfolioController(@RequestBody CommonReqModel model,@RequestHeader("Authorization") String authorizationHeader){
+		String authToken = authorizationHeader.split(" ")[1];
+		ResponseEntity<ApiResponses> finalResponse;
+		
+		finalResponse=authserv.savePortfolioService(responseBean,model,authToken);
+		
+		return finalResponse;
+}
+	
+	
 	@GetMapping("/get-profile")
 	public ResponseEntity<ApiResponses> getcompeletProfileController(@RequestHeader("Authorization") String authorizationHeader){
 		String authToken = authorizationHeader.split(" ")[1];

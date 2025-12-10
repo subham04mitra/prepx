@@ -9,4 +9,6 @@ import com.exam.Entity.UserProfile;
 public interface UserProfileRepository extends MongoRepository<UserProfile, String>{
 
 	Optional<UserProfile> findByUuid(String uuid);
+	
+	Optional<UserProfile> findByUrl(String url);
 }

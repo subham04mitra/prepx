@@ -49,8 +49,9 @@ public class CommonReqModel {
 	    private String phone;
 	    private String city;
 	    private String country;
-
+	    private String templateId;
 	    private String summary;
+	    private String slug;
 	    private String skills;
 
 	    private List<Social> socials;

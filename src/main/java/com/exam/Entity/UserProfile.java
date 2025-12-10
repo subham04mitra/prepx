@@ -24,10 +24,11 @@ public class UserProfile {
     private String lastName;
     private String headline;
     private String email;
-    private String phone;
+    private String mobile;
     private String city;
     private String country;
-
+    private String templateId;
+    private String url;
     private String summary;
     private String skills;
 
