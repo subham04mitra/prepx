@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import lombok.Data;
 @Data
@@ -15,7 +16,8 @@ public class InterviewFeedback {
     private String id;
 
     private String uuid;
-    private Instant entry_ts;
+    @Field(name = "entry_ts")
+    private Instant entryTs;
     private String topics;
     // Scores
     private double technicalScore;

@@ -14,10 +14,13 @@ import org.springframework.stereotype.Service;
 
 import com.exam.Entity.InterviewFeedback;
 import com.exam.Entity.MasSubscription;
+import com.exam.Entity.MasUser;
+import com.exam.Entity.UserProfile;
 import com.exam.Entity.UserSubscription;
 import com.exam.Exception.GlobalExceptionHandler;
 import com.exam.Repositry.InterviewFeedbackRepository;
 import com.exam.Repositry.MasSubscriptionRepository;
+import com.exam.Repositry.UserProfileRepository;
 import com.exam.Repositry.UserSubscriptionRepository;
 import com.exam.Response.ApiResponses;
 import com.exam.Response.ResponseBean;
@@ -34,6 +37,9 @@ public class AiProjectService {
 
 	@Autowired
 	TokenService tokenservice;
+	
+	 @Autowired
+	 UserProfileRepository userprofRepo;
 	
 	@Autowired
     UserSubscriptionRepository usersubRepo;
@@ -79,7 +85,7 @@ public class AiProjectService {
 				
 				if(userCount<subLimit) {
 					data=geminiService.askGeminiForQuestions(model.getLevel(), model.getDomain(),userSubType);
-					if(!data.isEmpty()) {
+					if(data!=null) {
 						
 						if("S".equals(userSubType) && !"".equals(model.getResume()) && "".equals(model.getJob_description())){
 //							System.out.println(1);
@@ -119,6 +125,63 @@ public class AiProjectService {
 					else {
 						return response.AppResponse("TryAgain", null, null);
 					}
+//					return response.AppResponse("Success", null, List.of("What is Spring boot?","What is JAva"));
+					
+				}
+				else {
+					return response.AppResponse("SubExp", null, null);
+				}
+				
+				
+		}catch(Exception ex) {
+			throw ex;
+		}
+	}
+	
+	
+	public ResponseEntity<ApiResponses> getQsListRoleBasedService(CommonReqModel model, ResponseBean response, String authToken){
+		List<String> data=null,data2=null,data3=null;
+		try {
+			if(authToken.isBlank() || authToken.isEmpty()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
+			
+			if(!tokenservice.validateTokenAndReturnBool(authToken)) {
+				throw new GlobalExceptionHandler.ExpiredException();
+			}
+			
+			if(model.getLevel()==null || model.getRole()==null) {
+				return response.AppResponse("Error", null, null);
+			}
+				String[] tdata=tokenservice.decodeJWT(authToken);
+				String uuid=tdata[1];
+				String role=tdata[0];
+//				System.out.println(role);
+				
+				
+				Optional<UserSubscription> subData=usersubRepo.findByUuid(uuid);
+				
+				int userCount=subData.get().getTCount();
+				
+				String userSubType=subData.get().getSubType();
+				
+				
+				Optional<MasSubscription> masSubData=massubRepo.findBySubType(userSubType);
+				
+				int subLimit=masSubData.get().getLimit();
+				
+				if(userCount<subLimit) {
+					data=geminiService.askGeminiForRoleBasedQuestions(model.getLevel(), model.getRole());
+					if(data!=null) {
+						
+						
+						return response.AppResponse("Success", null, data);
+					}
+					else {
+						return response.AppResponse("TryAgain", null, null);
+					}
+//					return response.AppResponse("Success", null, List.of("What is Spring boot?","What is JAva"));
+					
 				}
 				else {
 					return response.AppResponse("SubExp", null, null);
@@ -159,7 +222,8 @@ public class AiProjectService {
 //				System.out.println(jsonText);
 								
 				data=geminiService.getInterviewFeedback(jsonText);
-				if(!data.isEmpty()) {
+//				data=geminiService.getDummyInterviewFeedback();
+				if(data!=null) {
 					
 					
 					 Map<String, Object> scores = (Map<String, Object>) data.get("scores");
@@ -176,7 +240,7 @@ public class AiProjectService {
 
 					    fb.setVerdict((String) data.get("verdict"));
 					    fb.setUuid(uuid);
-					    fb.setEntry_ts(Instant.now());
+					    fb.setEntryTs(Instant.now());
 					    String formattedTopics = Arrays.stream(model.getTopic().split("\\|"))
 					            .map(String::trim)
 					            .collect(Collectors.joining(", "));
@@ -184,8 +248,16 @@ public class AiProjectService {
 					    fb.setTopics(formattedTopics);
 					    fb.setVerdict((String) data.get("verdict"));
 
+					    if(fb.getOverallScore()>6.5) {
+					    	UserSubscription user=usersubRepo.findByUuid(uuid).get();
+					    	user.setCoin(user.getCoin()+2);
+					    	
+					    	usersubRepo.save(user);
+					    }
+					    
 					    interviewFeedbackRepository.save(fb);
 					
+					    
 					
 					UserSubscription userSub=usersubRepo.findByUuid(uuid).get();
 					

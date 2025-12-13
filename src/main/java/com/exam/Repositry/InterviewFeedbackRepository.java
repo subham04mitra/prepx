@@ -9,6 +9,6 @@ import com.exam.Entity.InterviewFeedback;
 
 public interface InterviewFeedbackRepository extends MongoRepository<InterviewFeedback, String> {
 
-	List<InterviewFeedback> findByUuid(String uuid);
+	List<InterviewFeedback> findByUuidOrderByEntryTsDesc(String uuid);
 	
 }

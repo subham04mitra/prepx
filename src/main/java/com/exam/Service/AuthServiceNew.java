@@ -535,18 +535,21 @@ public class AuthServiceNew {
             	userData.setTemplateId(model.getTemplateId());    
             	userData.setSummary(model.getSummary());
             	userData.setSkills(model.getSkills());
-            	String baseSlug = model.getFirstName().toLowerCase() + "-" + model.getLastName().toLowerCase();
+            	String first = model.getFirstName().toLowerCase().replaceAll("\\s+", "");
+            	String last = model.getLastName().toLowerCase().replaceAll("\\s+", "");
+
+            	// base slug (no spaces)
+            	String baseSlug = first + "-" + last;
             	String slug = baseSlug;
 
-            	int counter = 1;
-
+            	// check uniqueness & auto-increment
+            	int counter = 2;
             	while (userprofRepo.findByUrl(slug).isPresent()) {
             	    slug = baseSlug + counter;
             	    counter++;
             	}
 
             	userData.setUrl(slug);
-
             	// ---------- Socials ----------
             	if (model.getSocials() != null) {
                     userData.setSocials(
@@ -1148,7 +1151,7 @@ public class AuthServiceNew {
             
             
             
-            List<InterviewFeedback> feedback=interviewFeedbackRepository.findByUuid(uuid);
+            List<InterviewFeedback> feedback=interviewFeedbackRepository.findByUuidOrderByEntryTsDesc(uuid);
           if(!feedback.isEmpty()) {
         	  return response.AppResponse("Success", null,feedback);
           }

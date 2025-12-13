@@ -48,6 +48,18 @@ public class AiProjectController {
 
 		}
 	
+	@PostMapping("/Get-Qs-Role")
+	public ResponseEntity<?> GetQsListRoleBsed(@RequestBody CommonReqModel model,@RequestHeader("Authorization") String authorizationHeader){
+			
+		String authToken = authorizationHeader.split(" ")[1];
+		ResponseEntity<ApiResponses> finalResponse;
+		
+		finalResponse=aiservice.getQsListRoleBasedService(model,responseBean,authToken);
+		
+		
+		return finalResponse;	
+
+		}
 	
 	
 	
