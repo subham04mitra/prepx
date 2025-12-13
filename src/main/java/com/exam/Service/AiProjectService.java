@@ -150,7 +150,7 @@ public class AiProjectService {
 				throw new GlobalExceptionHandler.ExpiredException();
 			}
 			
-			if(model.getLevel()==null || model.getRole()==null) {
+			if(model.getLevel()==null || model.getDomain()==null) {
 				return response.AppResponse("Error", null, null);
 			}
 				String[] tdata=tokenservice.decodeJWT(authToken);
@@ -171,7 +171,7 @@ public class AiProjectService {
 				int subLimit=masSubData.get().getLimit();
 				
 				if(userCount<subLimit) {
-					data=geminiService.askGeminiForRoleBasedQuestions(model.getLevel(), model.getRole());
+					data=geminiService.askGeminiForRoleBasedQuestions(model.getLevel(), model.getDomain());
 					if(data!=null) {
 						
 						

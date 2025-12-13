@@ -127,6 +127,7 @@ public class GeminiService {
 
         try {
             String json = callGroq(prompt);
+            System.out.println(json);
             return objectMapper.readValue(json, new TypeReference<>() {});
         } catch (Exception e) {
             return null;
@@ -135,22 +136,23 @@ public class GeminiService {
 
     /* ===================== ROLE QUESTIONS ===================== */
 
-    public List<String> askGeminiForRoleBasedQuestions(String level, String role) {
-
+    public List<String> askGeminiForRoleBasedQuestions(String level, String role[]) {
+    	System.out.println(role);
         String prompt = String.format("""
                 Generate 10 technical interview questions.
                 Role: %s
                 Experience: %s years.
                 Difficulty: %s
-                Return ONLY JSON array.
+                Return ONLY JSON array of strings.
                 """,
-                role,
+                role[0],
                 level,
                 getPromptBasedOnLevel(level)
         );
 
         try {
             String json = callGroq(prompt);
+            System.err.println(json);
             return objectMapper.readValue(json, new TypeReference<>() {});
         } catch (Exception e) {
             return null;
