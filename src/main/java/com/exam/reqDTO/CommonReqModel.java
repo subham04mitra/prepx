@@ -36,7 +36,7 @@ public class CommonReqModel {
 	private String topic;
 	private String resume;
 	private int rating;
-	
+	private String googleToken;
 	private int otp;
 	private String feedback;
 	private String ref;

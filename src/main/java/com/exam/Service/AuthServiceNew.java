@@ -1,6 +1,11 @@
 package com.exam.Service;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 
+import java.util.Collections;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -110,6 +115,9 @@ public class AuthServiceNew {
     
     @Value("${razorpay.key.id}")
     private String RAZORPAY_KEY_ID;
+    
+    @Value("${google.key.id}")
+    private String GOOGLE_KEY_ID;
 
     @Value("${razorpay.key.secret}")
     private String RAZORPAY_KEY_SECRET;
@@ -160,6 +168,76 @@ public class AuthServiceNew {
         }
     }
 
+    
+    
+   
+
+    // Inside your Service Class
+    public ResponseEntity<ApiResponses> googleLoginService(ResponseBean response, CommonReqModel model) throws Exception {
+        try {
+            String googleToken = model.getGoogleToken();
+            if (googleToken == null || googleToken.isEmpty()) {
+                return response.AppResponse("Nulltype", null, null);
+            }
+
+            // 1. Verify Google Token
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+                    .setAudience(Collections.singletonList(GOOGLE_KEY_ID)) // Same ID as Frontend
+                    .build();
+
+            GoogleIdToken idToken = verifier.verify(googleToken);
+            
+            if (idToken == null) {
+                return response.AppResponse("Invalid", null, null);
+            }
+
+            // 2. Extract User Info from Google Token
+            GoogleIdToken.Payload payload = idToken.getPayload();
+            String email = payload.getEmail();
+            // You can also get name: (String) payload.get("name");
+
+            // 3. Check if User Exists in YOUR DB
+            Optional<MasUser> userOpt = userRepo.findByUserEmailAndActiveFlag(email, "Y");
+
+            if (userOpt.isEmpty()) {
+                // OPTIONAL: Auto-register user here if you want new users to sign up via Google
+                return response.AppResponse("Invalid", null, "User email not found");
+            }
+
+            MasUser userDoc = userOpt.get();
+
+            // 4. Generate YOUR App's JWT (Same logic as normal login)
+            LoginResModel user = new LoginResModel();
+            user.setUser_name(userDoc.getUserName());
+            user.setUser_mobile(userDoc.getUserMobile());
+            user.setUser_email(userDoc.getUserEmail());
+            user.setUser_branch(userDoc.getStream());
+            user.setUser_inst(userDoc.getUserInst());
+            user.setComplete(userDoc.isComplete());
+
+            // Use the existing user's UUID and Role
+            String token = tokenservice.generateToken(userDoc.getUuid(), userDoc.getUserRole());
+
+            // 5. Save Token Session
+            MasUserToken tok = new MasUserToken();
+            tok.setUuid(userDoc.getUuid());
+            tok.setJwt(token);
+            tok.setIsInvalid(false);
+            tok.setIsLogout(false);
+            tok.setEntryTs(Instant.now());
+            tokenRepo.save(tok);
+
+            return response.AppResponse("LoginSuccess", token, user);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+          throw ex;
+        }
+    }
+    
+    
+    
+    
     // -------------------------------------------------------------------
     // REFRESH TOKEN IMPLEMENTATION (MONGO)
     // -------------------------------------------------------------------

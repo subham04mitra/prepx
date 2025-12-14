@@ -31,10 +31,22 @@ public class AuthController {
 		
 		finalResponse=authserv.loginService(responseBean,model);
 		
-		return finalResponse;
+		return finalResponse;	
+	}
+	
+	
+	@PostMapping("/google-login")
+	public ResponseEntity<ApiResponses> googleloginController(@RequestBody CommonReqModel model) throws Exception{
 		
+		ResponseEntity<ApiResponses> finalResponse;
 		
-	}@PostMapping("/send-otp")
+		finalResponse=authserv.googleLoginService(responseBean,model);
+		
+		return finalResponse;	
+	}
+	
+	
+	@PostMapping("/send-otp")
 	public ResponseEntity<ApiResponses> otpController(@RequestBody CommonReqModel model) throws Exception{
 		
 		ResponseEntity<ApiResponses> finalResponse;

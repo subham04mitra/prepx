@@ -13,7 +13,7 @@ public interface MasUserRepository extends MongoRepository<MasUser, String> {
     
     // or
     Optional<MasUser> findByRefCode(String refCode);
-    
+    Optional<MasUser> findByUserEmailAndActiveFlag(String userEmail, String activeFlag);
     Optional<MasUser> findByUuidAndActiveFlag(String uuid, String activeFlag);
     List<MasUser> findByUserEmailOrUserMobile(String userEmail, String userMobile);
 }
