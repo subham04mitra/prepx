@@ -53,6 +53,8 @@ public class EmailService {
                     entity,
                     String.class
             );
+            
+            
 
             // 🔍 LOG BREVO RESPONSE
 //            System.out.println("Brevo Status Code : " + response.getStatusCode());
