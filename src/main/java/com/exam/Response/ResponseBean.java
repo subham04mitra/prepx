@@ -33,6 +33,19 @@ public class ResponseBean {
                 response.setToken(token);
                 response.setData(data);
                 return new ResponseEntity<>(response, HttpStatus.OK);
+            case "OTPSuccess":
+                response.setCode("200");
+                response.setMessage("OTP has been sent to your email id.");                
+                
+                response.setData(data);
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            case "PWDSuccess":
+                response.setCode("200");
+                response.setMessage("Password has been changed succesfully.");                
+                
+                response.setData(data);
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            
             case "RefreshSuccess":
                 response.setCode("200");
                 response.setMessage("Refresh Success");                
@@ -42,6 +55,11 @@ public class ResponseBean {
                 response.setCode("200");
                 response.setMessage("Logout Success"); 
                 return new ResponseEntity<>(response, HttpStatus.OK);
+                
+            case "OTPError":
+                response.setCode("404");
+                response.setMessage("Wrong OTP"); 
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
             case "Unauothorize":
                 response.setCode("401");
                 response.setMessage("Unautorized"); 

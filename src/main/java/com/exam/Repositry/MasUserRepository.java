@@ -9,6 +9,8 @@ import com.exam.Entity.MasUser;
 
 public interface MasUserRepository extends MongoRepository<MasUser, String> {
     Optional<MasUser> findByUuidAndUserPwdAndActiveFlag(String uuid, String userPwd, String activeFlag);
+    
+    
     // or
     Optional<MasUser> findByRefCode(String refCode);
     

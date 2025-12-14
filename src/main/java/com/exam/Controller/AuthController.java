@@ -32,7 +32,28 @@ public class AuthController {
 		finalResponse=authserv.loginService(responseBean,model);
 		
 		return finalResponse;
+		
+		
+	}@PostMapping("/send-otp")
+	public ResponseEntity<ApiResponses> otpController(@RequestBody CommonReqModel model) throws Exception{
+		
+		ResponseEntity<ApiResponses> finalResponse;
+		
+		finalResponse=authserv.otpService(responseBean,model);
+		
+		return finalResponse;
 	}
+	
+	@PostMapping("/forget-password")
+public ResponseEntity<ApiResponses> forgetPasswordController(@RequestBody CommonReqModel model) throws Exception{
+	
+	ResponseEntity<ApiResponses> finalResponse;
+	
+	finalResponse=authserv.forgetPasswordService(responseBean,model);
+	
+	return finalResponse;
+}
+	
 	
 	@PostMapping("/refresh")
 	public ResponseEntity<ApiResponses> refreshTokenController(@RequestHeader("Authorization") String authorizationHeader){

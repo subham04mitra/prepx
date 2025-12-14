@@ -1,6 +1,7 @@
 package com.exam.Service;
 
 
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -27,6 +28,7 @@ import com.exam.Entity.Leaderboard;
 import com.exam.Entity.MasSubscription;
 import com.exam.Entity.MasUser;
 import com.exam.Entity.MasUserToken;
+import com.exam.Entity.OTP;
 import com.exam.Entity.PaymentData;
 import com.exam.Entity.TodayQs;
 import com.exam.Entity.UserFeedback;
@@ -40,6 +42,7 @@ import com.exam.Repositry.LeaderboardRepository;
 import com.exam.Repositry.MasSubscriptionRepository;
 import com.exam.Repositry.MasUserRepository;
 import com.exam.Repositry.MasUserTokenRepository;
+import com.exam.Repositry.OTPRepository;
 import com.exam.Repositry.PaymentDataRepository;
 import com.exam.Repositry.TodayQsRepository;
 import com.exam.Repositry.UserFeedbackRepository;
@@ -61,6 +64,12 @@ public class AuthServiceNew {
 
     @Autowired
     MasUserRepository userRepo;
+    
+    @Autowired
+    EmailService emailServ;
+    
+    @Autowired
+    OTPRepository otpRepo;
     
     @Autowired
     UserSubscriptionRepository usersubRepo;
@@ -238,6 +247,13 @@ public class AuthServiceNew {
             if (model.getUuid().isEmpty() || model.getUser_pwd().isEmpty() || model.getEmail().isEmpty() || model.getInst().isEmpty()
             		|| model.getBranch().isEmpty() || model.getStream().isEmpty()) {
                 return response.AppResponse("Nulltype", null, null);
+            }
+            
+            
+            Optional<OTP> userOtp =otpRepo.findByUuidAndEmailOtp(model.getUuid(), model.getOtp());
+            
+            if(!userOtp.isPresent()) {
+            	return response.AppResponse("OTPError", null, null);
             }
             
            List<MasUser> userDataCheck=userRepo.findByUserEmailOrUserMobile(model.getEmail(), model.getMobile());
@@ -1340,4 +1356,96 @@ public class AuthServiceNew {
 //            throw ex;
 //        }
 //    }
+    
+    
+    public ResponseEntity<ApiResponses> otpService(ResponseBean response, CommonReqModel model) throws Exception {
+
+        try {
+            if (model.getUuid().isEmpty() ) {
+                return response.AppResponse("Nulltype", null, null);
+            }
+            int otp = 1000 + new SecureRandom().nextInt(9000);
+//            System.out.println(11);
+            if("P".equals(model.getType())) {
+//            	System.out.println(12);
+            	
+            	 Optional<MasUser> user=userRepo.findByUuidAndActiveFlag(model.getUuid(), "Y");
+                 
+                 if(!user.isPresent()) {
+                 	return response.AppResponse("Invalid", null, null);
+                 }
+//                 System.out.println(user.get());
+                 OTP userDoc = new OTP();
+                                 
+                 
+                 userDoc.setEmailOtp(otp);
+                 userDoc.setUuid(model.getUuid());
+                 
+                 otpRepo.save(userDoc);
+                 
+                 emailServ.sendOtpEmail(user.get().getUserEmail(), otp);
+
+            }
+            else {
+            	OTP userDoc = new OTP();
+                
+
+                
+                
+                
+                userDoc.setEmailOtp(otp);
+                userDoc.setUuid(model.getUuid());
+                
+                otpRepo.save(userDoc);
+                
+                emailServ.sendOtpEmail(model.getEmail(), otp);
+            }
+           
+            
+            
+      return response.AppResponse("OTPSuccess", null, otp);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw ex;
+        }
+    }
+
+    
+    
+    public ResponseEntity<ApiResponses> forgetPasswordService(ResponseBean response, CommonReqModel model) throws Exception {
+
+        try {
+            if (model.getUuid().isEmpty() ) {
+                return response.AppResponse("Nulltype", null, null);
+            }
+            
+//            System.out.println(12);
+            
+            Optional<OTP> userOtp =otpRepo.findByUuidAndEmailOtp(model.getUuid(), model.getOtp());
+            
+            if(!userOtp.isPresent()) {
+            	return response.AppResponse("OTPError", null, null);
+            }
+           
+             
+            Optional<MasUser> user=userRepo.findByUuidAndActiveFlag(model.getUuid(),"Y");
+            
+            
+            if(!user.isPresent()) {
+            	return response.AppResponse("Invalid", null, null);
+            }
+            MasUser userData=user.get();
+            userData.setUserPwd(model.getUser_pwd());
+            
+            userRepo.save(userData);
+            
+      return response.AppResponse("PWDSuccess", null, null);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw ex;
+        }
+    }
+    
 }

@@ -54,4 +54,7 @@ public class MasUser {
     @Field("is_profile_complete")
     private boolean complete;
 
+    @Field("email_otp")
+    private int emailOtp;
+    
 }

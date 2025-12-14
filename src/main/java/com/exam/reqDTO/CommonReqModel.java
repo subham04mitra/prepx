@@ -36,6 +36,8 @@ public class CommonReqModel {
 	private String topic;
 	private String resume;
 	private int rating;
+	
+	private int otp;
 	private String feedback;
 	private String ref;
 	private String answer;
