@@ -249,4 +249,104 @@ public class GeminiService {
         }
     }
 
+    
+    public Map<String, Object> askGeminiForResumeAnalyze(String resumeText) {
+        // We explicitly ask for the JSON keys needed by the React frontend
+        String prompt = String.format("""
+            You are a highly precise ATS (Applicant Tracking System) Analyzer. 
+You will be provided with raw text extracted from a resume.
+
+CRITICAL INSTRUCTIONS:
+1. DO NOT claim a section is missing (like Summary or Experience) until you have scanned the ENTIRE text for those specific keywords or synonyms (e.g., 'Professional Profile', 'Work History').
+2. Ignore minor formatting artifacts caused by PDF-to-text conversion (like strange line breaks or bullet symbols).
+3. If you find duplicate phrases (e.g., 'RBAC systems, RBAC systems'), flag it as a content error, NOT a structural error.
+4. Analyze based on content logic, not just visual layout.
+
+Input Text:
+%s
+
+Return STRICT JSON format ONLY. Do not include markdown like ```json.
+And Also Give issues with solutions for each RESUME TAILORING,Header Links,Email Address
+,Design,ATS Essentials,Contact Information,
+SECTIONS,Spelling & Grammar,Repetition,Quantify Impact
+Required Format:
+{
+  "atsScore": (0-100),
+  "summary": "overview",
+  "issues": [
+    { "error": "Actual content mistake", "solution": "How to fix" }
+  ],
+  "formattingTips": []
+}"
+                Required Structure:
+                {
+                  "atsScore": (0-100 integer),
+                  "summary": "2-sentence professional overview",
+                  "grammarScore": (0-100 integer),
+                  "issues": [
+                    { "error": "Description of mistake", "solution": "How to fix it" }
+                  ],
+                  "formattingTips": ["Tip 1", "Tip 2", "Tip 3"]
+                }
+                """, resumeText);
+
+        try {
+            // Call your AI (Gemini/Groq)
+            String jsonResponse = callGroq(prompt); 
+            
+            // Use ObjectMapper to convert the String to a Map for the response
+            return objectMapper.readValue(jsonResponse, new TypeReference<>() {});
+        } catch (Exception e) {
+            System.err.println("AI Parsing Error: " + e.getMessage());
+            return null;
+        }
+    }
+    
+    
+    public Map<String, Object> getJDMatchInsights(String resumeText, String jobDescription) {
+        String prompt = String.format("""
+           "Analyze the following Resume against the Job Description (JD) provided. 
+
+RESUME TEXT: 
+%s
+
+JOB DESCRIPTION:
+%s
+
+Perform the analysis across these 4 dimensions:
+1. KEYWORD ALIGNMENT: Identify matched and missing technical/soft skills.
+2. EXPERIENCE GAP: Compare the required years of experience and seniority level.
+3. PROJECT RELEVANCE: Evaluate if the candidate's previous projects (e.g., World Bank, E-Governance) match the industry of the JD.
+4. ACTIONABLE STEPS: Provide concrete, non-generic advice to bridge the gap.
+
+RESPONSE STRUCTURE (Strict JSON): Do not include markdown like ```json.s
+{
+  "matchPercentage": (Integer 0-100),
+  "matchSummary": "A high-level executive summary of the alignment.",
+  "matchedSkills": ["Skill A", "Skill B"],
+  "missingSkills": ["Critical Skill C", "Nice-to-have Skill D"],
+  "analysisBreakdown": {
+    "technicalFit": "Detailed analysis of tech stack alignment",
+    "seniorityFit": "Analysis of experience level vs requirements",
+    "domainFit": "Evaluation of industry-specific experience"
+  },
+  "actionPlan": [
+    "Specific improvement 1",
+    "Specific improvement 2",
+    "Specific improvement 3"
+  ],
+  "fruitfulInsights": "One unique 'pro-tip' to make the resume stand out for this specific role."
+}"
+            """, resumeText, jobDescription);
+
+        try {
+            String json = callGroq(prompt);
+            // Clean JSON if AI adds markdown
+            return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    
 }

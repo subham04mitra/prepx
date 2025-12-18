@@ -1,5 +1,6 @@
 package com.exam.Service;
 
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,9 +9,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.apache.tika.Tika;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.exam.Entity.InterviewFeedback;
 import com.exam.Entity.MasSubscription;
@@ -277,5 +280,123 @@ public class AiProjectService {
 			throw ex;
 		}
 	}
+	
+	
+	public ResponseEntity<ApiResponses> ResumeParseService(MultipartFile file, ResponseBean response, String authToken) throws Exception {
+	    try {
+	        // 1. Basic Token Validation
+	        if (authToken == null || authToken.isBlank()) {
+	            return response.AppResponse("Nulltype", null, null);
+	        }
+	        if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+	            throw new GlobalExceptionHandler.ExpiredException();
+	        }
+
+	        // 2. File Validation (5MB limit)
+	        if (file == null || file.isEmpty()) {
+	            return response.AppResponse("Error", null, "File is empty");
+	        }
+	        if (file.getSize() > 5 * 1024 * 1024) { // 5MB check
+	            return response.AppResponse("Error",  null,"File size exceeds 5MB limit");
+	        }
+
+	        // 3. User & Subscription Check
+	        String[] tdata = tokenservice.decodeJWT(authToken);
+	        String uuid = tdata[1];
+	        Optional<UserSubscription> subData = usersubRepo.findByUuid(uuid);
+
+	        if (subData.isEmpty()) {
+	            return response.AppResponse("Unauothorize", null, null);
+	        }
+
+	        String userSubType = subData.get().getSubType();
+	        // Fixed logic: assuming 'G' or 'B' are allowed types
+	        if (!"G".equals(userSubType) && !"S".equals(userSubType)) {
+	            return response.AppResponse("Unauothorize", null, null);
+	        }
+
+	        // 4. Text Extraction using Apache Tika
+	        Tika tika = new Tika();
+	        String extractedText;
+	        try (InputStream stream = file.getInputStream()) {
+	            extractedText = tika.parseToString(stream);
+	        }
+
+	        if (extractedText == null || extractedText.isBlank()) {
+	            return response.AppResponse("Error", "Could not extract text from file", null);
+	        }
+
+	        Map<String, Object> analysisResult = geminiService.askGeminiForResumeAnalyze(extractedText);
+	        
+	        if (analysisResult != null) {
+	            return response.AppResponse("Success", null, analysisResult);
+	        }
+	        
+	        return response.AppResponse("Error", null, null);
+
+	    } catch (Exception ex) {
+	    	ex.printStackTrace();
+	        throw ex;
+	    }
+	}
+	
+	public ResponseEntity<ApiResponses> ResumeJDParseService(MultipartFile file, String JD, ResponseBean response, String authToken) throws Exception {
+	    try {
+	        // 1. Basic Token Validation
+	        if (authToken == null || authToken.isBlank()) {
+	            return response.AppResponse("Nulltype", null, null);
+	        }
+	        if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+	            throw new GlobalExceptionHandler.ExpiredException();
+	        }
+
+	        // 2. File Validation (5MB limit)
+	        if (file == null || file.isEmpty()) {
+	            return response.AppResponse("Error", null, "File is empty");
+	        }
+	        if (file.getSize() > 5 * 1024 * 1024) { // 5MB check
+	            return response.AppResponse("Error",  null,"File size exceeds 5MB limit");
+	        }
+
+	        // 3. User & Subscription Check
+	        String[] tdata = tokenservice.decodeJWT(authToken);
+	        String uuid = tdata[1];
+	        Optional<UserSubscription> subData = usersubRepo.findByUuid(uuid);
+
+	        if (subData.isEmpty()) {
+	            return response.AppResponse("Unauothorize", null, null);
+	        }
+
+	        String userSubType = subData.get().getSubType();
+	        // Fixed logic: assuming 'G' or 'B' are allowed types
+	        if (!"G".equals(userSubType) && !"S".equals(userSubType)) {
+	            return response.AppResponse("Unauothorize", null, null);
+	        }
+
+	        // 4. Text Extraction using Apache Tika
+	        Tika tika = new Tika();
+	        String extractedText;
+	        try (InputStream stream = file.getInputStream()) {
+	            extractedText = tika.parseToString(stream);
+	        }
+
+	        if (extractedText == null || extractedText.isBlank()) {
+	            return response.AppResponse("Error", "Could not extract text from file", null);
+	        }
+
+	        Map<String, Object> analysisResult = geminiService.getJDMatchInsights(extractedText,JD);
+	        
+	        if (analysisResult != null) {
+	            return response.AppResponse("Success", null, analysisResult);
+	        }
+	        
+	        return response.AppResponse("Error", null, null);
+
+	    } catch (Exception ex) {
+	    	ex.printStackTrace();
+	        throw ex;
+	    }
+	}
+	
 	
 }

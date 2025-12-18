@@ -28,6 +28,7 @@ public class CommonReqModel {
 	private String name;
 	private String role;
 	private String branch;
+	private String content;
 	private String inst;
 	private String[] domain;
 	private String level;
