@@ -121,6 +121,21 @@ public class AiProjectController {
 
 		}
 	
+	
+	@PostMapping("/Ai-Roadmap")
+	public ResponseEntity<?> GetRoadmap(@RequestBody CommonReqModel model,@RequestHeader("Authorization") String authorizationHeader){
+			
+		String authToken = authorizationHeader.split(" ")[1];
+		ResponseEntity<ApiResponses> finalResponse;
+		
+		
+		
+		finalResponse=aiservice.getAiRoadMapService(model,responseBean,authToken);
+		
+		return finalResponse;	
+
+		}
+	
 //	@GetMapping("/ask")
 //	 public List<String> ask() {
 //        // Hardcoded data

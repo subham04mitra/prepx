@@ -249,6 +249,54 @@ public class GeminiService {
         }
     }
 
+    public Map<String, Object> getAiRoadmap(String topic, List<String> improvements) {
+        String prompt = String.format("""
+            You are a Senior Technical Architect and Career Coach at PrepXAI.
+            The user recently performed poorly in an interview on the topic: "%s".
+            The specific gaps identified were: %s.
+
+            TASK:
+            Generate a comprehensive, professional mastery roadmap to help the user become a Pro in this topic.
+            
+            REQUIRED JSON STRUCTURE (STRICT JSON ONLY):
+            {
+              "topic": "The main topic",
+              "strategy": "A 2-sentence professional strategy for mastery",
+              "weeklyPlan": [
+                {
+                  "week": 1,
+                  "focus": "Conceptual depth",
+                  "tasks": ["Task 1", "Task 2", "Task 3"],
+                  "outcome": "What they will achieve this week"
+                }
+              ],
+              "projects": [
+                {
+                  "title": "Project Name",
+                  "difficulty": "Intermediate/Advanced",
+                  "description": "Short description of a project that covers the identified gaps",
+                  "features": ["Feature A", "Feature B"]
+                }
+              ],
+              "masteryTips": ["Professional tip 1", "Professional tip 2"]
+            }
+
+            CRITICAL INSTRUCTIONS:
+            1. The plan must be 4 weeks long.
+            2. Ensure the projects specifically address the improvement areas: %s.
+            3. Do not include markdown code blocks. Return raw JSON string.
+            """, topic, String.join(", ", improvements), String.join(", ", improvements));
+
+        try {
+            // Call your AI utility (Groq/Gemini)
+            String jsonResponse = callGroq(prompt); 
+            return objectMapper.readValue(jsonResponse, new TypeReference<>() {});
+        } catch (Exception e) {
+            System.err.println("Roadmap Generation Error: " + e.getMessage());
+            return null;
+        }
+    }
+    
     
     public Map<String, Object> askGeminiForResumeAnalyze(String resumeText) {
         String prompt = String.format("""

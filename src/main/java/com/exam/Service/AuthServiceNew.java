@@ -1242,10 +1242,18 @@ public class AuthServiceNew {
             
             String[] tdata = tokenservice.decodeJWT(authToken);
             String uuid = tdata[1];
+            List<InterviewFeedback> feedback=null;
+            if("A".equals(type)) {
+            	feedback=interviewFeedbackRepository.findByUuid(uuid);
+            }
+            else if("LESS".equals(type)) {
+            	feedback=interviewFeedbackRepository.findByUuidAndTechnicalScoreLessThanOrderByEntryTsDesc(uuid,5.0);
+            }
+            else {
+            	 feedback=interviewFeedbackRepository.findByUuidAndTypeOrderByEntryTsDesc(uuid,type);
+            }
             
             
-            
-            List<InterviewFeedback> feedback=interviewFeedbackRepository.findByUuidAndTypeOrderByEntryTsDesc(uuid,type);
           if(!feedback.isEmpty()) {
         	  return response.AppResponse("Success", null,feedback);
           }

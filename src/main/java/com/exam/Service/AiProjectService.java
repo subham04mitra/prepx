@@ -399,4 +399,31 @@ public class AiProjectService {
 	}
 	
 	
+	
+	public ResponseEntity<ApiResponses> getAiRoadMapService(CommonReqModel model, ResponseBean response, String authToken){
+		Map<String, Object> data=null;
+		try {
+			if(authToken.isBlank() || authToken.isEmpty()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
+			
+			if(!tokenservice.validateTokenAndReturnBool(authToken)) {
+				throw new GlobalExceptionHandler.ExpiredException();
+			}
+			
+			
+				data=geminiService.getAiRoadmap(model.getTopic(),model.getImprovements());
+				if(data!=null) {
+					return response.AppResponse("Success", null, data);
+				}
+				else {
+					return response.AppResponse("TryAgain", null, null);
+				}
+		}catch(Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
+	}
+	
+	
 }

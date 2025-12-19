@@ -45,6 +45,7 @@ public class CommonReqModel {
 	private long qsId;
 	private String job_description;
 	private List<QA> res;
+	private List<String> improvements;
 	private String profilePic;
 	 private String firstName;
 	    private String lastName;
