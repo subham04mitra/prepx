@@ -1007,12 +1007,14 @@ public class AuthServiceNew {
 	            lBoardData.setScore(lBoardData.getScore()+5);
 	            
 	            leaderoardRepo.save(lBoardData);
-	        	
+	            return response.AppResponse("fSuccess",
+		                null,
+		                qdata.get().getAnswer());
 	        }
 	        
 	        return response.AppResponse("fSuccess",
 	                null,
-	                null);
+	                qdata.get().getAnswer());
 
 	    } catch (Exception ex) {
 	        ex.printStackTrace();
