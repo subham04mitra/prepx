@@ -1229,7 +1229,7 @@ public class AuthServiceNew {
     }
     
     
-    public ResponseEntity<ApiResponses> viewRecordsService(ResponseBean response, String authToken) {
+    public ResponseEntity<ApiResponses> viewRecordsService(ResponseBean response, String authToken,String type) {
 
         try {
         	if(authToken.isBlank() || authToken.isEmpty()) {
@@ -1245,7 +1245,7 @@ public class AuthServiceNew {
             
             
             
-            List<InterviewFeedback> feedback=interviewFeedbackRepository.findByUuidOrderByEntryTsDesc(uuid);
+            List<InterviewFeedback> feedback=interviewFeedbackRepository.findByUuidAndTypeOrderByEntryTsDesc(uuid,type);
           if(!feedback.isEmpty()) {
         	  return response.AppResponse("Success", null,feedback);
           }

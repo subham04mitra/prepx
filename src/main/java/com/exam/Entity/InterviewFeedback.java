@@ -19,6 +19,7 @@ public class InterviewFeedback {
     @Field(name = "entry_ts")
     private Instant entryTs;
     private String topics;
+    private String type;
     // Scores
     private double technicalScore;
     private double communicationScore;

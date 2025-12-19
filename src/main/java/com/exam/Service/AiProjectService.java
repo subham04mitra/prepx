@@ -232,7 +232,7 @@ public class AiProjectService {
 					 Map<String, Object> scores = (Map<String, Object>) data.get("scores");
 
 					    InterviewFeedback fb = new InterviewFeedback();
-
+					    fb.setType(model.getType());
 					    fb.setTechnicalScore(Double.parseDouble(scores.get("technicalScore").toString()));
 					    fb.setCommunicationScore(Double.parseDouble(scores.get("communicationScore").toString()));
 					    fb.setVoiceClarityScore(Double.parseDouble(scores.get("voiceClarityScore").toString()));

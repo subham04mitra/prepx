@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.exam.Response.ApiResponses;
@@ -70,11 +71,11 @@ public class ApiController {
 	
 	
 	@GetMapping("/records")
-	public ResponseEntity<ApiResponses> ViewRecordsController(@RequestHeader("Authorization") String authorizationHeader){
+	public ResponseEntity<ApiResponses> ViewRecordsController(@RequestParam(name = "type", required = true) String type,@RequestHeader("Authorization") String authorizationHeader){
 		String authToken = authorizationHeader.split(" ")[1];
 		ResponseEntity<ApiResponses> finalResponse;
 		
-		finalResponse=authserv.viewRecordsService(responseBean,authToken);
+		finalResponse=authserv.viewRecordsService(responseBean,authToken,type);
 		
 		return finalResponse;
 }

@@ -251,57 +251,48 @@ public class GeminiService {
 
     
     public Map<String, Object> askGeminiForResumeAnalyze(String resumeText) {
-        // We explicitly ask for the JSON keys needed by the React frontend
         String prompt = String.format("""
-            You are a highly precise ATS (Applicant Tracking System) Analyzer. 
-You will be provided with raw text extracted from a resume.
+            You are an elite ATS (Applicant Tracking System) Auditor. 
+            Your task is to provide a brutal and honest score based on the provided resume text.
 
-CRITICAL INSTRUCTIONS:
-1. DO NOT claim a section is missing (like Summary or Experience) until you have scanned the ENTIRE text for those specific keywords or synonyms (e.g., 'Professional Profile', 'Work History').
-2. Ignore minor formatting artifacts caused by PDF-to-text conversion (like strange line breaks or bullet symbols).
-3. If you find duplicate phrases (e.g., 'RBAC systems, RBAC systems'), flag it as a content error, NOT a structural error.
-4. Analyze based on content logic, not just visual layout.
+            SCORING RUBRIC (Calculate the exact total):
+            1. Contact Info (10 pts): Full name, professional email, phone, and LinkedIn/Portfolio.
+            2. Experience (30 pts): Check for Action Verbs and Quantifiable Results (numbers/percentages). 
+            3. Skills (20 pts): Presence of industry-specific hard skills and tools.
+            4. Education (10 pts): Degree, Institution, and Graduation .
+            5. Formatting (15 pts): Logical flow, clear headings, and lack of visual noise.
+            6. Grammar & Spelling (15 pts): Penalize 5 pts for every distinct error found.
 
-Input Text:
-%s
+            CRITICAL INSTRUCTIONS:
+            - Do NOT hardcode the score. Calculate it based on the criteria above.
+            - If a section is weak (e.g., Experience lacks metrics), deduct points accordingly.
+            - Scan the entire text for synonyms (e.g., 'Work History' instead of 'Experience').
 
-Return STRICT JSON format ONLY. Do not include markdown like ```json.
-And Also Give issues with solutions for each RESUME TAILORING,Header Links,Email Address
-,Design,ATS Essentials,Contact Information,
-SECTIONS,Spelling & Grammar,Repetition,Quantify Impact
-Required Format:
-{
-  "atsScore": (0-100),
-  "summary": "overview",
-  "issues": [
-    { "error": "Actual content mistake", "solution": "How to fix" }
-  ],
-  "formattingTips": []
-}"
-                Required Structure:
-                {
-                  "atsScore": (0-100 integer),
-                  "summary": "2-sentence professional overview",
-                  "grammarScore": (0-100 integer),
-                  "issues": [
-                    { "error": "Description of mistake", "solution": "How to fix it" }
-                  ],
-                  "formattingTips": ["Tip 1", "Tip 2", "Tip 3"]
-                }
-                """, resumeText);
+            Input Text:
+            %s
+
+            Return STRICT JSON format ONLY. Do not include markdown headers like ```json.
+        	Give Min 7 Issues
+            Required Structure:
+            {
+              "atsScore": (Calculated integer 0-100),
+              "summary": "2-sentence executive summary of why the score was given",
+              "grammarScore": (Calculated integer 0-100),
+              "issues": [
+                { "error": "Specific mistake found", "solution": "Exact recommendation to improve" }
+              ],
+              "formattingTips": ["Tip 1", "Tip 2", "Tip 3"]
+            }
+            """, resumeText);
 
         try {
-            // Call your AI (Gemini/Groq)
             String jsonResponse = callGroq(prompt); 
-            
-            // Use ObjectMapper to convert the String to a Map for the response
             return objectMapper.readValue(jsonResponse, new TypeReference<>() {});
         } catch (Exception e) {
-            System.err.println("AI Parsing Error: " + e.getMessage());
+            System.err.println("AI Analysis Error: " + e.getMessage());
             return null;
         }
     }
-    
     
     public Map<String, Object> getJDMatchInsights(String resumeText, String jobDescription) {
         String prompt = String.format("""
