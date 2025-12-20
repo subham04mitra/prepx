@@ -251,9 +251,15 @@ public class AiProjectService {
 					    fb.setTopics(formattedTopics);
 					    fb.setVerdict((String) data.get("verdict"));
 
-					    if(fb.getOverallScore()>6.5) {
+					    if(fb.getOverallScore()>6.5 & fb.getOverallScore()<8) {
 					    	UserSubscription user=usersubRepo.findByUuid(uuid).get();
 					    	user.setCoin(user.getCoin()+2);
+					    	
+					    	usersubRepo.save(user);
+					    }
+					    if(fb.getOverallScore()>8) {
+					    	UserSubscription user=usersubRepo.findByUuid(uuid).get();
+					    	user.setCoin(user.getCoin()+5);
 					    	
 					    	usersubRepo.save(user);
 					    }
@@ -292,6 +298,22 @@ public class AiProjectService {
 	            throw new GlobalExceptionHandler.ExpiredException();
 	        }
 
+	        String uuid = tokenservice.decodeJWT(authToken)[1];
+	        
+	        Optional<UserSubscription> userSubscription=usersubRepo.findByUuid(uuid);
+            
+	        if(userSubscription.isPresent()) {
+	        	UserSubscription userSubscriptionData=userSubscription.get();
+	        	if(userSubscriptionData.getCoin()<1) {
+	        		return response.AppResponse("Insufficient", null, null);
+	        	}
+	        	 userSubscriptionData.setCoin(userSubscriptionData.getCoin()-1);
+	        	 usersubRepo.save(userSubscriptionData);
+	        }
+	       
+            
+            
+	        
 	        // 2. File Validation (5MB limit)
 	        if (file == null || file.isEmpty()) {
 	            return response.AppResponse("Error", null, "File is empty");
@@ -300,9 +322,7 @@ public class AiProjectService {
 	            return response.AppResponse("Error",  null,"File size exceeds 5MB limit");
 	        }
 
-	        // 3. User & Subscription Check
-	        String[] tdata = tokenservice.decodeJWT(authToken);
-	        String uuid = tdata[1];
+	     
 	        Optional<UserSubscription> subData = usersubRepo.findByUuid(uuid);
 
 	        if (subData.isEmpty()) {
@@ -349,7 +369,20 @@ public class AiProjectService {
 	        if (!tokenservice.validateTokenAndReturnBool(authToken)) {
 	            throw new GlobalExceptionHandler.ExpiredException();
 	        }
-
+	        
+	        String uuid = tokenservice.decodeJWT(authToken)[1];
+	        
+	        Optional<UserSubscription> userSubscription=usersubRepo.findByUuid(uuid);
+            
+	        if(userSubscription.isPresent()) {
+	        	UserSubscription userSubscriptionData=userSubscription.get();
+	        	if(userSubscriptionData.getCoin()<1) {
+	        		return response.AppResponse("Insufficient", null, null);
+	        	}
+	        	 userSubscriptionData.setCoin(userSubscriptionData.getCoin()-1);
+	        	 usersubRepo.save(userSubscriptionData);
+	        }
+	        
 	        // 2. File Validation (5MB limit)
 	        if (file == null || file.isEmpty()) {
 	            return response.AppResponse("Error", null, "File is empty");
@@ -358,9 +391,7 @@ public class AiProjectService {
 	            return response.AppResponse("Error",  null,"File size exceeds 5MB limit");
 	        }
 
-	        // 3. User & Subscription Check
-	        String[] tdata = tokenservice.decodeJWT(authToken);
-	        String uuid = tdata[1];
+	       
 	        Optional<UserSubscription> subData = usersubRepo.findByUuid(uuid);
 
 	        if (subData.isEmpty()) {
@@ -411,6 +442,18 @@ public class AiProjectService {
 				throw new GlobalExceptionHandler.ExpiredException();
 			}
 			
+			String uuid = tokenservice.decodeJWT(authToken)[1];
+	        
+	        Optional<UserSubscription> userSubscription=usersubRepo.findByUuid(uuid);
+            
+	        if(userSubscription.isPresent()) {
+	        	UserSubscription userSubscriptionData=userSubscription.get();
+	        	if(userSubscriptionData.getCoin()<1) {
+	        		return response.AppResponse("Insufficient", null, null);
+	        	}
+	        	 userSubscriptionData.setCoin(userSubscriptionData.getCoin()-1);
+	        	 usersubRepo.save(userSubscriptionData);
+	        }
 			
 				data=geminiService.getAiRoadmap(model.getTopic(),model.getImprovements());
 				if(data!=null) {

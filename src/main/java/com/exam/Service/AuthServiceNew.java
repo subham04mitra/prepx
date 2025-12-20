@@ -380,11 +380,11 @@ public class AuthServiceNew {
             Optional<MasUser> refuserData=userRepo.findByRefCode(model.getRef());
             
             if(refuserData.isPresent()) {
-            	 userSubscription.setCoin(2);
+            	 userSubscription.setCoin(5);
             	 usersubRepo.save(userSubscription);
             	 UserSubscription refuserSubscription=usersubRepo.findByUuid(refuserData.get().getUuid()).get();
-            	 System.out.println(refuserSubscription);
-                 if(!"F".equals(refuserSubscription.getSubType()) && refuserSubscription.getRCount()<3){
+//            	 System.out.println(refuserSubscription);
+//                 if(!"F".equals(refuserSubscription.getSubType()) && refuserSubscription.getRCount()<3){
                  	refuserSubscription.setRCount(refuserSubscription.getRCount()+1);
 //                 	refuserSubscription.setTCount(Math.max(0, refuserSubscription.getTCount() - 1));
                  	refuserSubscription.setTCount(refuserSubscription.getTCount() - 1);
@@ -392,7 +392,7 @@ public class AuthServiceNew {
                  	
                  	
                  	usersubRepo.save(refuserSubscription);
-                 }
+//                 }
             }
            
             }
@@ -1007,6 +1007,13 @@ public class AuthServiceNew {
 	            lBoardData.setScore(lBoardData.getScore()+5);
 	            
 	            leaderoardRepo.save(lBoardData);
+	            
+	            UserSubscription userSubscription=usersubRepo.findByUuid(uuid).get();
+	            
+	            userSubscription.setCoin(userSubscription.getCoin()+1);
+	            
+	            usersubRepo.save(userSubscription);
+	            
 	            return response.AppResponse("fSuccess",
 		                null,
 		                qdata.get().getAnswer());
@@ -1535,5 +1542,40 @@ public class AuthServiceNew {
             throw ex;
         }
     }
+    
+    
+    public ResponseEntity<ApiResponses> purchaseInterviewService(ResponseBean response, CommonReqModel model,String authToken) {
+
+        try {
+        	if(authToken.isBlank() || authToken.isEmpty()) {
+    			return response.AppResponse("Nulltype", null, null);
+    		}
+    		
+    		if(!tokenservice.validateTokenAndReturnBool(authToken)) {
+    			throw new GlobalExceptionHandler.ExpiredException();
+    		}
+            	String[] tdata = tokenservice.decodeJWT(authToken);
+                String uuid = tdata[1];
+                
+                int intCount=model.getCount();
+                
+                UserSubscription refuserSubscription=usersubRepo.findByUuid(uuid).get();
+           	if( refuserSubscription.getCoin()<intCount*2){
+           		return response.AppResponse("Insufficient", null,null);
+           	}
+                	refuserSubscription.setTCount(refuserSubscription.getTCount() - intCount);
+                	refuserSubscription.setCoin(refuserSubscription.getCoin()-intCount*2);
+                	
+                	
+                	usersubRepo.save(refuserSubscription);
+            return response.AppResponse("RegSuccess", null,null);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw ex;
+        }
+    }
+    
+    
     
 }

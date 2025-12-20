@@ -104,6 +104,11 @@ public class ResponseBean {
                 response.setCode("400");
                 response.setMessage("Something went wrong");
                 return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            case "Insufficient":
+                response.setCode("201");
+                response.setMessage("Insufficient Coin Balance !!");
+                return new ResponseEntity<>(response, HttpStatus.CREATED);
+           
             case "TokenValid":
                 response.setCode("409");
                 response.setMessage("Token is Valid");

@@ -158,6 +158,16 @@ public class ApiController {
 		return finalResponse;
 }
 	
+	@PostMapping("/Purchase-Interview")
+	public ResponseEntity<ApiResponses> purchaseInterviewController(@RequestBody CommonReqModel model,@RequestHeader("Authorization") String authorizationHeader){
+		String authToken = authorizationHeader.split(" ")[1];
+		ResponseEntity<ApiResponses> finalResponse;
+		
+		finalResponse=authserv.purchaseInterviewService(responseBean,model,authToken);
+		
+		return finalResponse;
+}
+	
 	
 	@PostMapping("/create-order")
     public Map<String, Object> createOrder(@RequestBody Map<String, Object> data) throws Exception {

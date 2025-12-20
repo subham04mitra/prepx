@@ -21,6 +21,7 @@ public class CommonReqModel {
 
 	
 	private String uuid;
+	private int count;
 	private String user_pwd;
 	private String token;
 	private String email;
