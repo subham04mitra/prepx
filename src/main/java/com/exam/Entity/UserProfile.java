@@ -5,6 +5,11 @@ import java.util.List;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.exam.reqDTO.CommonReqModel;
+import com.exam.reqDTO.CommonReqModel.Achievement;
+import com.exam.reqDTO.CommonReqModel.Certificate;
+import com.exam.reqDTO.CommonReqModel.Language;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -37,10 +42,41 @@ public class UserProfile {
     private List<Education> education;
     private List<Project> projects;
 
+    private List<Language> languages;
+    private List<Certificate> certifications;
+    private List<Achievement> achievements;
+    
     private String resume;
     private String profilePic;
 
 
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Language {
+        private String name;
+        private String proficiency;
+    }
+    
+    
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Certificate {
+    	private String name;
+    	private String issuingOrganization;
+        private String issueDate;
+        private String credentialUrl;
+    }
+    
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Achievement {
+    	private String title;
+        private String description;
+    }
+    
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

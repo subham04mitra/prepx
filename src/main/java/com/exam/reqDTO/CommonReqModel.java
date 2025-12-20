@@ -63,6 +63,10 @@ public class CommonReqModel {
 	    private List<Experience> experience;
 	    private List<Education> education;
 	    private List<Project> projects;
+	    
+	    private List<Language> languages;
+	    private List<Certificate> certifications;
+	    private List<Achievement> achievements;
 
 	    
 	    
@@ -74,6 +78,33 @@ public class CommonReqModel {
 	        private String url;
 	    }
 
+	    
+	    @Data
+	    @NoArgsConstructor
+	    @AllArgsConstructor
+	    public static class Language {
+	        private String proficiency;
+	        private String name;
+	    }
+	    
+	    
+	    @Data
+	    @NoArgsConstructor
+	    @AllArgsConstructor
+	    public static class Certificate {
+	        private String credentialUrl;
+	        private String name;
+	        private String issueDate;
+	        private String issuingOrganization;
+	    }
+	    
+	    @Data
+	    @NoArgsConstructor
+	    @AllArgsConstructor
+	    public static class Achievement {
+	        private String description;
+	        private String title;
+	    }
 	    
 	    @Data
 	    @NoArgsConstructor

@@ -216,26 +216,37 @@ public class GeminiService {
     public Map<String, Object> getInterviewFeedback(String qnaHistoryJson) {
 
         String prompt = String.format("""
-                Analyze the interview Q&A:
-                %s
+               Act as an expert Technical Recruiter and Communication Coach. 
 
-                Return STRICT JSON:
-                {
-                  "scores": {
-                    "technicalScore": 0-10,
-                    "communicationScore": 0-10,
-                    "voiceClarityScore": 0-10,
-                    "overallScore": 0-10
-                  },
-                  "strengths": [],
-                  "improvements": [],
-                  "verdict": "",
-                  "questionFeedback": [
-                    {"question":"","feedback":""}
-                  ]
-                }
+### Task
+Analyze the provided Interview Q&A transcript. Note that the text was generated via voice-to-text, so there will be significant typos, phonetic misspellings (e.g., "java script" instead of "JavaScript", "spring board" instead of "Spring Boot"), and grammatical errors. 
 
-                Ignore grammar/spelling mistakes.
+### Instructions
+1. IGNORE all spelling and grammatical mistakes caused by transcription.
+2. Focus on the depth of technical knowledge, clarity of thought, and professional tone.
+3. Calculate scores out of 10 based on the quality of the answers provided.
+4. The "overallScore" must be a weighted average of the technical and communication performance not voice clarity score.
+
+### Input Data
+%s
+
+### Response Format
+You must return ONLY a valid JSON object. Do not include markdown formatting like ```json ... ``` or any introductory text.
+
+{
+  "scores": {
+    "technicalScore": 0-10,
+    "communicationScore": 0-10,
+    "voiceClarityScore": 0-10,
+    "overallScore": 0-10
+  },
+  "strengths": ["string"],
+  "improvements": ["string"],
+  "verdict": "string",
+  "questionFeedback": [
+    {"question": "string", "feedback": "string"}
+  ]
+}
                 """,
                 qnaHistoryJson
         );

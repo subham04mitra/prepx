@@ -251,17 +251,28 @@ public class AiProjectService {
 					    fb.setTopics(formattedTopics);
 					    fb.setVerdict((String) data.get("verdict"));
 
-					    if(fb.getOverallScore()>6.5 & fb.getOverallScore()<8) {
-					    	UserSubscription user=usersubRepo.findByUuid(uuid).get();
-					    	user.setCoin(user.getCoin()+2);
-					    	
-					    	usersubRepo.save(user);
-					    }
-					    if(fb.getOverallScore()>8) {
-					    	UserSubscription user=usersubRepo.findByUuid(uuid).get();
-					    	user.setCoin(user.getCoin()+5);
-					    	
-					    	usersubRepo.save(user);
+					 
+					    Optional<UserSubscription> userOpt = usersubRepo.findByUuid(uuid);
+
+					    if (userOpt.isPresent()) {
+					        UserSubscription user = userOpt.get();
+					        double score = fb.getOverallScore();
+					        int coinsToAdd = 0;
+
+					        if (score > 6.5 && score < 8) { 
+					            coinsToAdd = 2;
+					        } else if (score >= 8) {
+					            coinsToAdd = 5;
+					        }
+
+					        // 3. Update and save only if coins were earned
+					        if (coinsToAdd > 0) {
+					            user.setCoin(user.getCoin() + coinsToAdd);
+					            usersubRepo.save(user);
+					        }
+					    } else {
+					        // Log or handle the case where the UUID doesn't exist
+					        System.out.println("User not found for UUID: " + uuid);
 					    }
 					    
 					    interviewFeedbackRepository.save(fb);

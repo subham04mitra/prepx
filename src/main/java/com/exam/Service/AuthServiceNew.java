@@ -497,6 +497,51 @@ public class AuthServiceNew {
                     );
                 }
 
+                
+                //------------Certificate----------
+                
+                if (model.getCertifications() != null) {
+                    userData.setCertifications(
+                            model.getCertifications()
+                                    .stream()
+                                    .map(e -> new UserProfile.Certificate(
+                                            e.getName(),
+                                            e.getIssuingOrganization(),
+                                            e.getIssueDate(),
+                                            e.getCredentialUrl()
+                                    ))
+                                    .toList()
+                    );
+                }
+                
+                //------------Language-----------
+                
+                if (model.getLanguages() != null) {
+                    userData.setLanguages(
+                            model.getLanguages()
+                                    .stream()
+                                    .map(e -> new UserProfile.Language(
+                                            e.getName(),
+                                            e.getProficiency()
+                                    ))
+                                    .toList()
+                    );
+                }
+                
+                //-----------Achievement---------
+                
+                if (model.getAchievements() != null) {
+                    userData.setAchievements(
+                            model.getAchievements()
+                                    .stream()
+                                    .map(e -> new UserProfile.Achievement(
+                                            e.getTitle(),
+                                            e.getDescription()
+                                    ))
+                                    .toList()
+                    );
+                }
+                
             	// ---------- Resume ----------
             	userData.setResume(model.getResume());
             	userData.setProfilePic(model.getProfilePic());
