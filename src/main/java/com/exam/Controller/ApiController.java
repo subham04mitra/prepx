@@ -1,6 +1,7 @@
 package com.exam.Controller;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.json.JSONObject;
@@ -225,5 +226,26 @@ public class ApiController {
     	    return finalResponse;
     }
 	
+    
+    
+    @PostMapping("/get-mock-apti")
+    public ResponseEntity<ApiResponses> mockaptiQsController(@RequestBody CommonReqModel model,@RequestHeader("Authorization") String authorizationHeader){
+		String authToken = authorizationHeader.split(" ")[1];
+		ResponseEntity<ApiResponses> finalResponse;
+		
+		finalResponse=authserv.getmockAptiQsService(responseBean,model,authToken);
+		
+		return finalResponse;
+}
+	
+    @PostMapping("/submit-mock-apti")
+    public ResponseEntity<ApiResponses> submitmockaptiQsController(@RequestBody CommonReqModel model,@RequestHeader("Authorization") String authorizationHeader){
+		String authToken = authorizationHeader.split(" ")[1];
+		ResponseEntity<ApiResponses> finalResponse;
+		
+		finalResponse=authserv.submitmockAptiQsService(responseBean,model,authToken);
+		
+		return finalResponse;
+}
 	
 }

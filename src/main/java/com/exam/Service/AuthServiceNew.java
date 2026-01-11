@@ -6,6 +6,8 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 
 import java.util.Collections;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -27,6 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.exam.Entity.AptitudeQs;
 import com.exam.Entity.DailyQs;
 import com.exam.Entity.InterviewFeedback;
 import com.exam.Entity.Leaderboard;
@@ -41,6 +44,7 @@ import com.exam.Entity.UserProfile;
 import com.exam.Entity.UserSubmission;
 import com.exam.Entity.UserSubscription;
 import com.exam.Exception.GlobalExceptionHandler;
+import com.exam.Repositry.AptitudeQsRepository;
 import com.exam.Repositry.DailyQsRepositry;
 import com.exam.Repositry.InterviewFeedbackRepository;
 import com.exam.Repositry.LeaderboardRepository;
@@ -105,6 +109,9 @@ public class AuthServiceNew {
     
     @Autowired
     PaymentDataRepository paymentdataRepo;
+    
+    @Autowired
+    AptitudeQsRepository aptitudeqsRepo;
 
     @Autowired
     TokenService tokenservice;
@@ -1621,6 +1628,154 @@ public class AuthServiceNew {
         }
     }
     
+    public ResponseEntity<ApiResponses> getmockAptiQsService(
+            ResponseBean response,
+            CommonReqModel model,
+            String authToken) {
+
+        try {
+            if (authToken == null || authToken.isBlank()) {
+                return response.AppResponse("Nulltype", null, null);
+            }
+
+            if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+                throw new GlobalExceptionHandler.ExpiredException();
+            }
+
+            String[] tdata = tokenservice.decodeJWT(authToken);
+            String uuid = tdata[1];
+
+            String examLevel = model.getLevel() == null || model.getLevel().isBlank()
+                    ? "begineer"
+                    : model.getLevel().toLowerCase();
+
+            int qsSizePerCat;
+            switch (examLevel) {
+                case "intermediate":
+                    qsSizePerCat = 15;
+                    break;
+                case "advanced":
+                    qsSizePerCat = 20;
+                    break;
+                default:
+                    qsSizePerCat = 10;
+            }
+            List<Map<String, Object>> finalList = new ArrayList<>();
+
+            for (String type : model.getTypes()) {
+
+                List<AptitudeQs> qsList =
+                        aptitudeqsRepo.findRandomByCategory(type, qsSizePerCat);
+//                System.out.println(qsList);
+                if (qsList != null) {
+                    for (AptitudeQs qs : qsList) {
+
+                        Map<String, Object> map = Map.of(
+                                "id", qs.getQsId(),       
+                                "category", qs.getCategory(),
+                                "text", qs.getQuestion(),
+                                "options", List.of(
+                                        qs.getOption1(),
+                                        qs.getOption2(),
+                                        qs.getOption3(),
+                                        qs.getOption4()
+                                )
+                        );
+
+                        finalList.add(map);
+                    }
+                }
+            }
+
+
+            if (!finalList.isEmpty()) {
+                return response.AppResponse("Success", null, finalList);
+            } else {
+                return response.AppResponse("Notfound", null, null);
+            }
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw ex;
+        }
+    }
     
+    
+    public ResponseEntity<ApiResponses> submitmockAptiQsService(
+            ResponseBean response,
+            CommonReqModel model,
+            String authToken) {
+        try {
+            if (authToken == null || authToken.isBlank()) {
+                return response.AppResponse("Nulltype", null, null);
+            }
+
+            if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+                throw new GlobalExceptionHandler.ExpiredException();
+            }
+
+            String[] tdata = tokenservice.decodeJWT(authToken);
+            String uuid = tdata[1];
+
+            int totalQuestions=0,attempted=0,right = 0,wrong=0,negativeMarks=0,totalMarksObtained=0;
+            
+//            "totalQuestions", 8,
+//            "attempted", 6,
+//            "skipped", 2,
+//            "right", 4,
+//            "wrong", 2,
+//            "negativeMarks", -1.0,
+//            "totalMarksObtained", 7.0
+            
+            
+            for (Object res : model.getResponses()) {
+				
+            	 Map<String, Object> resMap = (Map<String, Object>) res;
+            
+            	 long qsId = Long.parseLong(resMap.get("qsid").toString());
+                 String userAnswer = resMap.get("answer").toString();
+                 
+                 Optional<AptitudeQs> optionalQs = aptitudeqsRepo.findByQsId(qsId);
+            
+                 
+                 if (optionalQs.isPresent()) {
+//                	 System.out.println(optionalQs.get());
+                     AptitudeQs qs = optionalQs.get();
+
+                     if (qs.getAnswer().equalsIgnoreCase(userAnswer)) {
+                         right++;
+                     } else {
+                         wrong++;
+                     }
+                 }
+             
+            }
+            
+            Map<String, Object> result = Map.of(
+            		"totalQuestions", 0,
+                  "attempted", model.getResponses().size(),
+                  "skipped", 0,
+                  "right", right,
+                  "wrong", wrong,
+                  "negativeMarks", BigDecimal.valueOf(wrong*0.33)
+                  .setScale(2, RoundingMode.HALF_UP),
+                  "totalMarksObtained", BigDecimal.valueOf(right-wrong*0.33)
+                  .setScale(2, RoundingMode.HALF_UP)
+            );
+            return response.AppResponse("Success", null, result);
+            
+//            if (!finalList.isEmpty()) {
+//                return response.AppResponse("Success", null, finalList);
+//            } else {
+//                return response.AppResponse("Notfound", null, null);
+//            }
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw ex;
+        }
+	
+    }
+
     
 }

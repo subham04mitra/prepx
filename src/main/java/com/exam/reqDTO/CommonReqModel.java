@@ -35,6 +35,7 @@ public class CommonReqModel {
 	private String level;
 	private String stream;
 	private String type;
+	private List<String> types;
 	private String topic;
 	private String resume;
 	private int rating;
@@ -48,6 +49,8 @@ public class CommonReqModel {
 	private List<QA> res;
 	private List<String> improvements;
 	private String profilePic;
+	private String examId;
+	private List<?> responses;
 	 private String firstName;
 	    private String lastName;
 	    private String headline;
