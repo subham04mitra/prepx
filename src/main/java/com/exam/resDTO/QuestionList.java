@@ -7,5 +7,6 @@ import java.util.List;
  * The model will generate a JSON object: {"questions": ["Q1", "Q2", ...]}
  */
 public record QuestionList(List<String> questions) {
-    // This simple record automatically provides a constructor, getters, and toString().
+	// This simple record automatically provides a constructor, getters, and
+	// toString().
 }

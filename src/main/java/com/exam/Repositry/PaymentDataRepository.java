@@ -11,5 +11,5 @@ import com.exam.Entity.PaymentData;
 public interface PaymentDataRepository extends MongoRepository<PaymentData, String> {
 
 	List<PaymentData> findByUuid(String uuid);
-	
+
 }

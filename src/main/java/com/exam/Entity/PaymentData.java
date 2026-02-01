@@ -12,23 +12,22 @@ import lombok.Data;
 @Document(collection = "payment_data")
 public class PaymentData {
 
-
-	@Id 
+	@Id
 	public String id;
-	
-    @Field("uuid")
-    private String uuid;
-    
-    @Field("order_id")
-    private String orderId;
-    @Field("payment_id")
-    private String paymentId;
-    @Field("signature")
-    private String signature;
-    @Field("amount")
-    private String amount;
-    
-    @Field("entry_ts")
-    private Instant entryTs;
-    
+
+	@Field("uuid")
+	private String uuid;
+
+	@Field("order_id")
+	private String orderId;
+	@Field("payment_id")
+	private String paymentId;
+	@Field("signature")
+	private String signature;
+	@Field("amount")
+	private String amount;
+
+	@Field("entry_ts")
+	private Instant entryTs;
+
 }

@@ -18,30 +18,28 @@ import lombok.NoArgsConstructor;
 @Document(collection = "user_vs_sub")
 public class UserSubscription {
 
-	@Id 
+	@Id
 	public String id;
-	
-    @Field("uuid")
-    private String uuid;
 
-    @Field("sub_type")
-    private String subType;    
-    
-    @Field("count")
-    private int count;
-    
-    @Field("coin")
-    private int coin;
-    
-    @Field("tcount")
-    private int tCount;
-    
-    @Field("rcount")
-    private int rCount;
-    
-    @Field("entry_ts")
-    private Instant entryTs;
-    
-  
-	
+	@Field("uuid")
+	private String uuid;
+
+	@Field("sub_type")
+	private String subType;
+
+	@Field("count")
+	private int count;
+
+	@Field("coin")
+	private int coin;
+
+	@Field("tcount")
+	private int tCount;
+
+	@Field("rcount")
+	private int rCount;
+
+	@Field("entry_ts")
+	private Instant entryTs;
+
 }

@@ -7,12 +7,12 @@ import lombok.Data;
 @Data
 public class DailyQsDTO {
 
-	    private long id;
-	   
-	    private String lang;
-	    
-	    private String question;
-	    private String submit;
-	   	  
-	    private String[] options;
+	private long id;
+
+	private String lang;
+
+	private String question;
+	private String submit;
+
+	private String[] options;
 }

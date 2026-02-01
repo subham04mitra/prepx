@@ -10,14 +10,12 @@ import lombok.Data;
 @Document(collection = "leaderboard")
 public class Leaderboard {
 
-	@Id 
-    private String id;
-	
+	@Id
+	private String id;
 
-    @Field("uuid")
-    private String uuid;
-    
-    
-    @Field("score")
-    private int score;
+	@Field("uuid")
+	private String uuid;
+
+	@Field("score")
+	private int score;
 }

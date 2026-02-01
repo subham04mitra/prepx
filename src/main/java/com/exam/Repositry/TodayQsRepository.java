@@ -9,6 +9,5 @@ import com.exam.Entity.TodayQs;
 
 public interface TodayQsRepository extends MongoRepository<TodayQs, String> {
 
-    List<TodayQs> findByDateBetween(Instant start, Instant end);
+	List<TodayQs> findByDateBetween(Instant start, Instant end);
 }
-

@@ -12,14 +12,13 @@ import lombok.Data;
 @Document(collection = "mas_otp")
 public class OTP {
 
-	@Id 
-    private String id;
-	
+	@Id
+	private String id;
+
 	@Field("uuid")
-    private String uuid;
-	
+	private String uuid;
+
 	@Field("email_otp")
-    private int emailOtp;
-	
-	
+	private int emailOtp;
+
 }

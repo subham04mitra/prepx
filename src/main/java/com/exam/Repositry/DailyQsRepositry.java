@@ -8,14 +8,11 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 
 import com.exam.Entity.DailyQs;
 
-public interface DailyQsRepositry extends MongoRepository<DailyQs,String>{
+public interface DailyQsRepositry extends MongoRepository<DailyQs, String> {
 
-	@Aggregation(pipeline = {
-		    "{ $match: { lang: ?0 } }",
-		    "{ $sample: { size: 1 } }"
-		})
-		List<DailyQs> findRandomOneByLang(String lang);
-	
-Optional<DailyQs> findByQsId(long qsId);
-	
+	@Aggregation(pipeline = { "{ $match: { lang: ?0 } }", "{ $sample: { size: 1 } }" })
+	List<DailyQs> findRandomOneByLang(String lang);
+
+	Optional<DailyQs> findByQsId(long qsId);
+
 }

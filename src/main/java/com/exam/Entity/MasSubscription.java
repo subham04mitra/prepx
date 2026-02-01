@@ -1,6 +1,5 @@
 package com.exam.Entity;
 
-
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -12,19 +11,16 @@ import java.time.Instant;
 @Document(collection = "mas_subscription")
 public class MasSubscription {
 
-	@Id 
-    private String id;
+	@Id
+	private String id;
 
-    @Field("sub_type")
-    private String subType;    
+	@Field("sub_type")
+	private String subType;
 
-    @Field("sub_name")
-    private String subName;
-    
-    @Field("limit")
-    private int limit;
-    
+	@Field("sub_name")
+	private String subName;
 
-   
+	@Field("limit")
+	private int limit;
+
 }
-

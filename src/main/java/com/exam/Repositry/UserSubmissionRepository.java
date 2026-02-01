@@ -9,6 +9,5 @@ import com.exam.Entity.UserSubmission;
 
 public interface UserSubmissionRepository extends MongoRepository<UserSubmission, String> {
 
-    List<UserSubmission> findByUuidAndDateBetween(String uuid, Instant start, Instant end);
+	List<UserSubmission> findByUuidAndDateBetween(String uuid, Instant start, Instant end);
 }
-

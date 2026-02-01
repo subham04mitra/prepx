@@ -29,6 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.exam.Entity.AptiFeedback;
 import com.exam.Entity.AptitudeQs;
 import com.exam.Entity.DailyQs;
 import com.exam.Entity.InterviewFeedback;
@@ -44,6 +45,7 @@ import com.exam.Entity.UserProfile;
 import com.exam.Entity.UserSubmission;
 import com.exam.Entity.UserSubscription;
 import com.exam.Exception.GlobalExceptionHandler;
+import com.exam.Repositry.AptiFeedbackRepository;
 import com.exam.Repositry.AptitudeQsRepository;
 import com.exam.Repositry.DailyQsRepositry;
 import com.exam.Repositry.InterviewFeedbackRepository;
@@ -71,1372 +73,1165 @@ import com.exam.resDTO.ProfileDTO;
 @Service
 public class AuthServiceNew {
 
-    @Autowired
-    MasUserRepository userRepo;
-    
-    @Autowired
-    EmailService emailServ;
-    
-    @Autowired
-    OTPRepository otpRepo;
-    
-    @Autowired
-    UserSubscriptionRepository usersubRepo;
-    
-    @Autowired
-    UserProfileRepository userprofRepo;
-    
-    @Autowired
-    UserFeedbackRepository userfeedbackRepo;
+	@Autowired
+	MasUserRepository userRepo;
 
-    @Autowired
-    MasUserTokenRepository tokenRepo;
-    
-    @Autowired
-    MasSubscriptionRepository massubRepo;
-    
-    @Autowired
-    TodayQsRepository todayQsRepo;
-    
-    @Autowired
-    UserSubmissionRepository submissionRepo;
-    
-    @Autowired
-    DailyQsRepositry qsRepo;
-    
-    @Autowired
-    LeaderboardRepository leaderoardRepo;
-    
-    @Autowired
-    PaymentDataRepository paymentdataRepo;
-    
-    @Autowired
-    AptitudeQsRepository aptitudeqsRepo;
+	@Autowired
+	EmailService emailServ;
 
-    @Autowired
-    TokenService tokenservice;
-    
-    @Autowired
-    InterviewFeedbackRepository interviewFeedbackRepository;
+	@Autowired
+	OTPRepository otpRepo;
 
-    
-    @Value("${razorpay.key.id}")
-    private String RAZORPAY_KEY_ID;
-    
-    @Value("${google.key.id}")
-    private String GOOGLE_KEY_ID;
+	@Autowired
+	UserSubscriptionRepository usersubRepo;
 
-    @Value("${razorpay.key.secret}")
-    private String RAZORPAY_KEY_SECRET;
-    
-    // -------------------------------------------------------------------
-    // LOGIN IMPLEMENTATION (MONGO)
-    // -------------------------------------------------------------------
-    public ResponseEntity<ApiResponses> loginService(ResponseBean response, CommonReqModel model) {
+	@Autowired
+	UserProfileRepository userprofRepo;
 
-        try {
-            if (model.getUuid().isEmpty() || model.getUser_pwd().isEmpty()) {
-                return response.AppResponse("Nulltype", null, null);
-            }
+	@Autowired
+	UserFeedbackRepository userfeedbackRepo;
 
-            Optional<MasUser> userOpt =
-                    userRepo.findByUuidAndUserPwdAndActiveFlag(model.getUuid(), model.getUser_pwd(), "Y");
+	@Autowired
+	MasUserTokenRepository tokenRepo;
 
-            if (userOpt.isEmpty()) {
-                return response.AppResponse("Notfound", null, null);
-            }
+	@Autowired
+	MasSubscriptionRepository massubRepo;
 
-            MasUser userDoc = userOpt.get();
+	@Autowired
+	TodayQsRepository todayQsRepo;
 
-            LoginResModel user = new LoginResModel();
-            user.setUser_name(userDoc.getUserName());
-            user.setUser_mobile(userDoc.getUserMobile());
-            user.setUser_email(userDoc.getUserEmail());
-            user.setUser_branch(userDoc.getStream());
-            user.setUser_inst(userDoc.getUserInst());
-            user.setComplete(userDoc.isComplete());
+	@Autowired
+	UserSubmissionRepository submissionRepo;
 
-            String token = tokenservice.generateToken(model.getUuid(), userDoc.getUserRole());
+	@Autowired
+	DailyQsRepositry qsRepo;
 
-            // Save token in DB
-            MasUserToken tok = new MasUserToken();
-            tok.setUuid(model.getUuid());
-            tok.setJwt(token);
-            tok.setIsInvalid(false);
-            tok.setIsLogout(false);
-            tok.setEntryTs(Instant.now());
-            tokenRepo.save(tok);
+	@Autowired
+	LeaderboardRepository leaderoardRepo;
 
-            return response.AppResponse("LoginSuccess", token, user);
+	@Autowired
+	PaymentDataRepository paymentdataRepo;
 
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw ex;
-        }
-    }
+	@Autowired
+	AptitudeQsRepository aptitudeqsRepo;
 
-    
-    
-   
+	@Autowired
+	TokenService tokenservice;
 
-    // Inside your Service Class
-    public ResponseEntity<ApiResponses> googleLoginService(ResponseBean response, CommonReqModel model) throws Exception {
-        try {
-            String googleToken = model.getGoogleToken();
-            if (googleToken == null || googleToken.isEmpty()) {
-                return response.AppResponse("Nulltype", null, null);
-            }
+	@Autowired
+	AptiFeedbackRepository aptiFeedbackRepository;
+	
+	@Autowired
+	InterviewFeedbackRepository interviewFeedbackRepository;
 
-            // 1. Verify Google Token
-            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
-                    .setAudience(Collections.singletonList(GOOGLE_KEY_ID)) // Same ID as Frontend
-                    .build();
+	@Value("${razorpay.key.id}")
+	private String RAZORPAY_KEY_ID;
 
-            GoogleIdToken idToken = verifier.verify(googleToken);
-            
-            if (idToken == null) {
-                return response.AppResponse("Invalid", null, null);
-            }
+	@Value("${google.key.id}")
+	private String GOOGLE_KEY_ID;
 
-            // 2. Extract User Info from Google Token
-            GoogleIdToken.Payload payload = idToken.getPayload();
-            String email = payload.getEmail();
-            // You can also get name: (String) payload.get("name");
+	@Value("${razorpay.key.secret}")
+	private String RAZORPAY_KEY_SECRET;
 
-            // 3. Check if User Exists in YOUR DB
-            Optional<MasUser> userOpt = userRepo.findByUserEmailAndActiveFlag(email, "Y");
+	// -------------------------------------------------------------------
+	// LOGIN IMPLEMENTATION (MONGO)
+	// -------------------------------------------------------------------
+	public ResponseEntity<ApiResponses> loginService(ResponseBean response, CommonReqModel model) {
 
-            if (userOpt.isEmpty()) {
-                // OPTIONAL: Auto-register user here if you want new users to sign up via Google
-                return response.AppResponse("Invalid", null, "User email not found");
-            }
+		try {
+			if (model.getUuid().isEmpty() || model.getUser_pwd().isEmpty()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
 
-            MasUser userDoc = userOpt.get();
+			Optional<MasUser> userOpt = userRepo.findByUuidAndUserPwdAndActiveFlag(model.getUuid(), model.getUser_pwd(),
+					"Y");
 
-            // 4. Generate YOUR App's JWT (Same logic as normal login)
-            LoginResModel user = new LoginResModel();
-            user.setUser_name(userDoc.getUserName());
-            user.setUser_mobile(userDoc.getUserMobile());
-            user.setUser_email(userDoc.getUserEmail());
-            user.setUser_branch(userDoc.getStream());
-            user.setUser_inst(userDoc.getUserInst());
-            user.setComplete(userDoc.isComplete());
+			if (userOpt.isEmpty()) {
+				return response.AppResponse("Notfound", null, null);
+			}
 
-            // Use the existing user's UUID and Role
-            String token = tokenservice.generateToken(userDoc.getUuid(), userDoc.getUserRole());
+			MasUser userDoc = userOpt.get();
 
-            // 5. Save Token Session
-            MasUserToken tok = new MasUserToken();
-            tok.setUuid(userDoc.getUuid());
-            tok.setJwt(token);
-            tok.setIsInvalid(false);
-            tok.setIsLogout(false);
-            tok.setEntryTs(Instant.now());
-            tokenRepo.save(tok);
+			LoginResModel user = new LoginResModel();
+			user.setUser_name(userDoc.getUserName());
+			user.setUser_mobile(userDoc.getUserMobile());
+			user.setUser_email(userDoc.getUserEmail());
+			user.setUser_branch(userDoc.getStream());
+			user.setUser_inst(userDoc.getUserInst());
+			user.setComplete(userDoc.isComplete());
 
-            return response.AppResponse("LoginSuccess", token, user);
+			String token = tokenservice.generateToken(model.getUuid(), userDoc.getUserRole());
 
-        } catch (Exception ex) {
-            ex.printStackTrace();
-          throw ex;
-        }
-    }
-    
-    
-    
-    
-    // -------------------------------------------------------------------
-    // REFRESH TOKEN IMPLEMENTATION (MONGO)
-    // -------------------------------------------------------------------
-    @Transactional(rollbackFor = Exception.class)
-    public ResponseEntity<ApiResponses> refreshTokenService(ResponseBean response, String oldToken) {
+			// Save token in DB
+			MasUserToken tok = new MasUserToken();
+			tok.setUuid(model.getUuid());
+			tok.setJwt(token);
+			tok.setIsInvalid(false);
+			tok.setIsLogout(false);
+			tok.setEntryTs(Instant.now());
+			tokenRepo.save(tok);
 
-        try {
-            if (oldToken.isEmpty()) {
-                return response.AppResponse("Nulltype", null, null);
-            }
+			return response.AppResponse("LoginSuccess", token, user);
 
-            if (!tokenservice.validateTokenAndReturnBool(oldToken)) {
-                throw new GlobalExceptionHandler.ExpiredException();
-            }
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
+	}
 
-            String[] tdata = tokenservice.decodeJWT(oldToken);
-            String uuid = tdata[1];
+	// Inside your Service Class
+	public ResponseEntity<ApiResponses> googleLoginService(ResponseBean response, CommonReqModel model)
+			throws Exception {
+		try {
+			String googleToken = model.getGoogleToken();
+			if (googleToken == null || googleToken.isEmpty()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
 
-            // Generate new token
-            String newToken = tokenservice.generateRefreshToken(oldToken);
+			// 1. Verify Google Token
+			GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(),
+					new GsonFactory()).setAudience(Collections.singletonList(GOOGLE_KEY_ID)) // Same ID as Frontend
+					.build();
 
-            if (newToken == null) {
-                return response.AppResponse("TokenValid", null, null);
-            }
+			GoogleIdToken idToken = verifier.verify(googleToken);
 
-            // Mark old token as invalid = true
-            MasUserToken oldTok = tokenRepo.findByJwt(oldToken).get();
-            if (oldTok != null) {
-                oldTok.setIsInvalid(true);
-                tokenRepo.save(oldTok);
-            }
+			if (idToken == null) {
+				return response.AppResponse("Invalid", null, null);
+			}
 
-            // Insert new token
-            MasUserToken newTok = new MasUserToken();
-            newTok.setUuid(uuid);
-            newTok.setJwt(newToken);
-            newTok.setIsInvalid(false);
-            newTok.setIsLogout(false);
-            newTok.setEntryTs(Instant.now());
-            tokenRepo.save(newTok);
+			// 2. Extract User Info from Google Token
+			GoogleIdToken.Payload payload = idToken.getPayload();
+			String email = payload.getEmail();
+			// You can also get name: (String) payload.get("name");
 
-            return response.AppResponse("RefreshSuccess", newToken, null);
+			// 3. Check if User Exists in YOUR DB
+			Optional<MasUser> userOpt = userRepo.findByUserEmailAndActiveFlag(email, "Y");
 
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw ex;
-        }
-    }
+			if (userOpt.isEmpty()) {
+				// OPTIONAL: Auto-register user here if you want new users to sign up via Google
+				return response.AppResponse("Invalid", null, "User email not found");
+			}
 
-    // -------------------------------------------------------------------
-    // LOGOUT IMPLEMENTATION (MONGO)
-    // -------------------------------------------------------------------
-    public ResponseEntity<ApiResponses> logoutService(ResponseBean response, String oldToken) {
+			MasUser userDoc = userOpt.get();
 
-        try {
-            if (oldToken.isEmpty()) {
-                return response.AppResponse("Nulltype", null, null);
-            }
+			// 4. Generate YOUR App's JWT (Same logic as normal login)
+			LoginResModel user = new LoginResModel();
+			user.setUser_name(userDoc.getUserName());
+			user.setUser_mobile(userDoc.getUserMobile());
+			user.setUser_email(userDoc.getUserEmail());
+			user.setUser_branch(userDoc.getStream());
+			user.setUser_inst(userDoc.getUserInst());
+			user.setComplete(userDoc.isComplete());
 
-            if (!tokenservice.validateTokenAndReturnBool(oldToken)) {
-                throw new GlobalExceptionHandler.ExpiredException();
-            }
+			// Use the existing user's UUID and Role
+			String token = tokenservice.generateToken(userDoc.getUuid(), userDoc.getUserRole());
 
-            MasUserToken tok = tokenRepo.findByJwt(oldToken).get();
+			// 5. Save Token Session
+			MasUserToken tok = new MasUserToken();
+			tok.setUuid(userDoc.getUuid());
+			tok.setJwt(token);
+			tok.setIsInvalid(false);
+			tok.setIsLogout(false);
+			tok.setEntryTs(Instant.now());
+			tokenRepo.save(tok);
 
-            if (tok != null) {
-                tok.setIsLogout(true);
-                tokenRepo.save(tok);
-                return response.AppResponse("LogoutSuccess", null, null);
-            }
+			return response.AppResponse("LoginSuccess", token, user);
 
-            return response.AppResponse("Error", null, null);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
+	}
 
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw ex;
-        }
-    }
-    
-    
-    @Transactional(rollbackFor = Exception.class)
-    public ResponseEntity<ApiResponses> registerService(ResponseBean response, CommonReqModel model) {
+	// -------------------------------------------------------------------
+	// REFRESH TOKEN IMPLEMENTATION (MONGO)
+	// -------------------------------------------------------------------
+	@Transactional(rollbackFor = Exception.class)
+	public ResponseEntity<ApiResponses> refreshTokenService(ResponseBean response, String oldToken) {
 
-        try {
-            if (model.getUuid().isEmpty() || model.getUser_pwd().isEmpty() || model.getEmail().isEmpty() || model.getInst().isEmpty()
-            		|| model.getBranch().isEmpty() || model.getStream().isEmpty()) {
-                return response.AppResponse("Nulltype", null, null);
-            }
-            
-            
-            Optional<OTP> userOtp =otpRepo.findByUuidAndEmailOtp(model.getUuid(), model.getOtp());
-            
-            if(!userOtp.isPresent()) {
-            	return response.AppResponse("OTPError", null, null);
-            }
-            
-           List<MasUser> userDataCheck=userRepo.findByUserEmailOrUserMobile(model.getEmail(), model.getMobile());
+		try {
+			if (oldToken.isEmpty()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
+
+			if (!tokenservice.validateTokenAndReturnBool(oldToken)) {
+				throw new GlobalExceptionHandler.ExpiredException();
+			}
+
+			String[] tdata = tokenservice.decodeJWT(oldToken);
+			String uuid = tdata[1];
+
+			// Generate new token
+			String newToken = tokenservice.generateRefreshToken(oldToken);
+
+			if (newToken == null) {
+				return response.AppResponse("TokenValid", null, null);
+			}
+
+			// Mark old token as invalid = true
+			MasUserToken oldTok = tokenRepo.findByJwt(oldToken).get();
+			if (oldTok != null) {
+				oldTok.setIsInvalid(true);
+				tokenRepo.save(oldTok);
+			}
+
+			// Insert new token
+			MasUserToken newTok = new MasUserToken();
+			newTok.setUuid(uuid);
+			newTok.setJwt(newToken);
+			newTok.setIsInvalid(false);
+			newTok.setIsLogout(false);
+			newTok.setEntryTs(Instant.now());
+			tokenRepo.save(newTok);
+
+			return response.AppResponse("RefreshSuccess", newToken, null);
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
+	}
+
+	// -------------------------------------------------------------------
+	// LOGOUT IMPLEMENTATION (MONGO)
+	// -------------------------------------------------------------------
+	public ResponseEntity<ApiResponses> logoutService(ResponseBean response, String oldToken) {
+
+		try {
+			if (oldToken.isEmpty()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
+
+			if (!tokenservice.validateTokenAndReturnBool(oldToken)) {
+				throw new GlobalExceptionHandler.ExpiredException();
+			}
+
+			MasUserToken tok = tokenRepo.findByJwt(oldToken).get();
+
+			if (tok != null) {
+				tok.setIsLogout(true);
+				tokenRepo.save(tok);
+				return response.AppResponse("LogoutSuccess", null, null);
+			}
+
+			return response.AppResponse("Error", null, null);
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
+	}
+
+	@Transactional(rollbackFor = Exception.class)
+	public ResponseEntity<ApiResponses> registerService(ResponseBean response, CommonReqModel model) {
+
+		try {
+			if (model.getUuid().isEmpty() || model.getUser_pwd().isEmpty() || model.getEmail().isEmpty()
+					|| model.getInst().isEmpty() || model.getBranch().isEmpty() || model.getStream().isEmpty()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
+
+			Optional<OTP> userOtp = otpRepo.findByUuidAndEmailOtp(model.getUuid(), model.getOtp());
+
+			if (!userOtp.isPresent()) {
+				return response.AppResponse("OTPError", null, null);
+			}
+
+			List<MasUser> userDataCheck = userRepo.findByUserEmailOrUserMobile(model.getEmail(), model.getMobile());
 //            System.err.println("--------"+userDataCheck);
-            if(!userDataCheck.isEmpty()) {
-            	return response.AppResponse("Exists", null, null);
-            }
-            
-            String refCode = new Random().ints(6, 0, 36)
-                    .mapToObj(i -> "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".charAt(i) + "")
-                    .collect(Collectors.joining());
+			if (!userDataCheck.isEmpty()) {
+				return response.AppResponse("Exists", null, null);
+			}
 
-            MasUser userData =new MasUser();
+			String refCode = new Random().ints(6, 0, 36)
+					.mapToObj(i -> "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".charAt(i) + "").collect(Collectors.joining());
 
-            userData.setUserEmail(model.getEmail());
-            userData.setUserMobile(model.getMobile());
-            userData.setStream(model.getStream());
-            userData.setUserBranch(model.getBranch());
-            userData.setUserInst(model.getInst());
-            userData.setUserName(model.getName());
-            userData.setUserPwd(model.getUser_pwd());
-            userData.setActiveFlag("Y");
-            userData.setUserRole("ADMIN");
-            userData.setEntryTs(Instant.now());
-            userData.setUuid(model.getUuid());
-            userData.setRefCode(refCode);
-            userData.setComplete(false);            
-            
-            userRepo.save(userData);
-            
-            UserSubscription userSubscription=new UserSubscription();
-            userSubscription.setUuid(model.getUuid());
-            userSubscription.setSubType("F");
-            userSubscription.setEntryTs(Instant.now());
-            
-            userSubscription.setRCount(0);
-            
-            
-            Leaderboard lBoardData=new Leaderboard();
-            lBoardData.setUuid(model.getUuid());
-            lBoardData.setScore(0);
-            
-            leaderoardRepo.save(lBoardData);
-            
-            if(model.getRef()!="") {
-            Optional<MasUser> refuserData=userRepo.findByRefCode(model.getRef());
-            
-            if(refuserData.isPresent()) {
-            	 userSubscription.setCoin(5);
-            	 usersubRepo.save(userSubscription);
-            	 UserSubscription refuserSubscription=usersubRepo.findByUuid(refuserData.get().getUuid()).get();
+			MasUser userData = new MasUser();
+
+			userData.setUserEmail(model.getEmail());
+			userData.setUserMobile(model.getMobile());
+			userData.setStream(model.getStream());
+			userData.setUserBranch(model.getBranch());
+			userData.setUserInst(model.getInst());
+			userData.setUserName(model.getName());
+			userData.setUserPwd(model.getUser_pwd());
+			userData.setActiveFlag("Y");
+			userData.setUserRole("ADMIN");
+			userData.setEntryTs(Instant.now());
+			userData.setUuid(model.getUuid());
+			userData.setRefCode(refCode);
+			userData.setComplete(false);
+
+			userRepo.save(userData);
+
+			UserSubscription userSubscription = new UserSubscription();
+			userSubscription.setUuid(model.getUuid());
+			userSubscription.setSubType("F");
+			userSubscription.setEntryTs(Instant.now());
+
+			userSubscription.setRCount(0);
+
+			Leaderboard lBoardData = new Leaderboard();
+			lBoardData.setUuid(model.getUuid());
+			lBoardData.setScore(0);
+
+			leaderoardRepo.save(lBoardData);
+
+			if (model.getRef() != "") {
+				Optional<MasUser> refuserData = userRepo.findByRefCode(model.getRef());
+
+				if (refuserData.isPresent()) {
+					userSubscription.setCoin(5);
+					usersubRepo.save(userSubscription);
+					UserSubscription refuserSubscription = usersubRepo.findByUuid(refuserData.get().getUuid()).get();
 //            	 System.out.println(refuserSubscription);
 //                 if(!"F".equals(refuserSubscription.getSubType()) && refuserSubscription.getRCount()<3){
-                 	refuserSubscription.setRCount(refuserSubscription.getRCount()+1);
+					refuserSubscription.setRCount(refuserSubscription.getRCount() + 1);
 //                 	refuserSubscription.setTCount(Math.max(0, refuserSubscription.getTCount() - 1));
-                 	refuserSubscription.setTCount(refuserSubscription.getTCount() - 1);
-                 	refuserSubscription.setCoin(refuserSubscription.getCoin()+2);
-                 	
-                 	
-                 	usersubRepo.save(refuserSubscription);
+					refuserSubscription.setTCount(refuserSubscription.getTCount() - 1);
+					refuserSubscription.setCoin(refuserSubscription.getCoin() + 2);
+
+					usersubRepo.save(refuserSubscription);
 //                 }
-            }
-           
-            }
-            else {
-            	userSubscription.setCoin(0);
-            	 usersubRepo.save(userSubscription);
-            }
-            return response.AppResponse("RegSuccess", null,null);
+				}
 
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw ex;
-        }
-    }
-    
-    
-    public ResponseEntity<ApiResponses> completeProfileService(ResponseBean response, CommonReqModel model,String authToken) {
+			} else {
+				userSubscription.setCoin(0);
+				usersubRepo.save(userSubscription);
+			}
+			return response.AppResponse("RegSuccess", null, null);
 
-        try {
-           if(authToken.isBlank() || authToken.isEmpty()) {
-			return response.AppResponse("Nulltype", null, null);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
 		}
-		
-		if(!tokenservice.validateTokenAndReturnBool(authToken)) {
-			throw new GlobalExceptionHandler.ExpiredException();
-		}
-        	String[] tdata = tokenservice.decodeJWT(authToken);
-            String uuid = tdata[1];
-            
-          
-            Optional<UserProfile> profData=userprofRepo.findByUuid(uuid);
-            
-            if(profData.isPresent()) {
-            	UserProfile userData =profData.get();
-            	userData.setFirstName(model.getFirstName());
-            	userData.setLastName(model.getLastName());
-            	userData.setHeadline(model.getHeadline());
-            	userData.setEmail(model.getEmail());
-            	userData.setMobile(model.getMobile());
-            	userData.setCity(model.getCity());
-            	userData.setCountry(model.getCountry());
-
-            	userData.setSummary(model.getSummary());
-            	userData.setSkills(model.getSkills());
-
-            	// ---------- Socials ----------
-            	if (model.getSocials() != null) {
-                    userData.setSocials(
-                            model.getSocials()
-                                    .stream()
-                                    .map(s -> new UserProfile.Social(s.getNetwork(), s.getUrl()))
-                                    .toList()
-                    );
-                }
-
-                // ---------- Experience ----------
-                if (model.getExperience() != null) {
-                    userData.setExperience(
-                            model.getExperience()
-                                    .stream()
-                                    .map(e -> new UserProfile.Experience(
-                                            e.getCompanyName(),
-                                            e.getJobTitle(),
-                                            e.getStartDate(),
-                                            e.getEndDate(),
-                                            e.getDescription()
-                                    ))
-                                    .toList()
-                    );
-                }
-
-                // ---------- Education ----------
-                if (model.getEducation() != null) {
-                    userData.setEducation(
-                            model.getEducation()
-                                    .stream()
-                                    .map(ed -> new UserProfile.Education(
-                                            ed.getInstitutionName(),
-                                            ed.getDegree(),
-                                            ed.getFieldOfStudy(),
-                                            ed.getStartDate(),
-                                            ed.getEndDate(),
-                                            ed.getScore()
-                                    ))
-                                    .toList()
-                    );
-                }
-
-                // ---------- Projects ----------
-                if (model.getProjects() != null) {
-                    userData.setProjects(
-                            model.getProjects()
-                                    .stream()
-                                    .map(p -> new UserProfile.Project(
-                                            p.getTitle(),
-                                            p.getTechStack(),
-                                            p.getProjectUrl(),
-                                            p.getRepoUrl(),
-                                            p.getDescription()
-                                    ))
-                                    .toList()
-                    );
-                }
-
-                
-                //------------Certificate----------
-                
-                if (model.getCertifications() != null) {
-                    userData.setCertifications(
-                            model.getCertifications()
-                                    .stream()
-                                    .map(e -> new UserProfile.Certificate(
-                                            e.getName(),
-                                            e.getIssuingOrganization(),
-                                            e.getIssueDate(),
-                                            e.getCredentialUrl()
-                                    ))
-                                    .toList()
-                    );
-                }
-                
-                //------------Language-----------
-                
-                if (model.getLanguages() != null) {
-                    userData.setLanguages(
-                            model.getLanguages()
-                                    .stream()
-                                    .map(e -> new UserProfile.Language(
-                                            e.getName(),
-                                            e.getProficiency()
-                                    ))
-                                    .toList()
-                    );
-                }
-                
-                //-----------Achievement---------
-                
-                if (model.getAchievements() != null) {
-                    userData.setAchievements(
-                            model.getAchievements()
-                                    .stream()
-                                    .map(e -> new UserProfile.Achievement(
-                                            e.getTitle(),
-                                            e.getDescription()
-                                    ))
-                                    .toList()
-                    );
-                }
-                
-            	// ---------- Resume ----------
-            	userData.setResume(model.getResume());
-            	userData.setProfilePic(model.getProfilePic());
-            	
-            	userprofRepo.save(userData);
-            }
-            else {
-            	
-            	UserProfile userData = new UserProfile();
-
-            	userData.setUuid(uuid);
-
-            	userData.setFirstName(model.getFirstName());
-            	userData.setLastName(model.getLastName());
-            	userData.setHeadline(model.getHeadline());
-            	userData.setEmail(model.getEmail());
-            	userData.setMobile(model.getPhone());
-            	userData.setCity(model.getCity());
-            	userData.setCountry(model.getCountry());
-            	
-            	userData.setSummary(model.getSummary());
-            	userData.setSkills(model.getSkills());
-
-            	// ---------- Socials ----------
-            	if (model.getSocials() != null) {
-                    userData.setSocials(
-                            model.getSocials()
-                                    .stream()
-                                    .map(s -> new UserProfile.Social(s.getNetwork(), s.getUrl()))
-                                    .toList()
-                    );
-                }
-
-                // ---------- Experience ----------
-                if (model.getExperience() != null) {
-                    userData.setExperience(
-                            model.getExperience()
-                                    .stream()
-                                    .map(e -> new UserProfile.Experience(
-                                            e.getCompanyName(),
-                                            e.getJobTitle(),
-                                            e.getStartDate(),
-                                            e.getEndDate(),
-                                            e.getDescription()
-                                    ))
-                                    .toList()
-                    );
-                }
-
-                // ---------- Education ----------
-                if (model.getEducation() != null) {
-                    userData.setEducation(
-                            model.getEducation()
-                                    .stream()
-                                    .map(ed -> new UserProfile.Education(
-                                            ed.getInstitutionName(),
-                                            ed.getDegree(),
-                                            ed.getFieldOfStudy(),
-                                            ed.getStartDate(),
-                                            ed.getEndDate(),
-                                            ed.getScore()
-                                    ))
-                                    .toList()
-                    );
-                }
-
-                // ---------- Projects ----------
-                if (model.getProjects() != null) {
-                    userData.setProjects(
-                            model.getProjects()
-                                    .stream()
-                                    .map(p -> new UserProfile.Project(
-                                            p.getTitle(),
-                                            p.getTechStack(),
-                                            p.getProjectUrl(),
-                                            p.getRepoUrl(),
-                                            p.getDescription()
-                                    ))
-                                    .toList()
-                    );
-                }
-
-            	// ---------- Resume ----------
-            	userData.setResume(model.getResume());
-            	userData.setProfilePic(model.getProfilePic());
-            	userprofRepo.save(userData);
-            	
-            	MasUser user=userRepo.findByUuidAndActiveFlag(uuid, "Y").get();
-            	
-            	user.setComplete(true);
-            	
-            	userRepo.save(user);
-            	
-            }
-            
-            return response.AppResponse("RegSuccess", null,null);
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw ex;
-        }
-    }
-    
-    
-    public ResponseEntity<ApiResponses> savePortfolioService(ResponseBean response, CommonReqModel model,String authToken) {
-
-        try {
-           if(authToken.isBlank() || authToken.isEmpty()) {
-			return response.AppResponse("Nulltype", null, null);
-		}
-		
-		if(!tokenservice.validateTokenAndReturnBool(authToken)) {
-			throw new GlobalExceptionHandler.ExpiredException();
-		}
-        	String[] tdata = tokenservice.decodeJWT(authToken);
-            String uuid = tdata[1];
-            
-          
-            Optional<UserProfile> profData=userprofRepo.findByUuid(uuid);
-            
-            if(profData.isPresent()) {
-            	UserProfile userData =profData.get();
-            	userData.setFirstName(model.getFirstName());
-            	userData.setLastName(model.getLastName());
-            	userData.setHeadline(model.getHeadline());
-            	userData.setEmail(model.getEmail());
-            	userData.setMobile(model.getMobile());
-            	userData.setCity(model.getCity());
-            	userData.setCountry(model.getCountry());
-            	userData.setTemplateId(model.getTemplateId());    
-            	userData.setSummary(model.getSummary());
-            	userData.setSkills(model.getSkills());
-            	String first = model.getFirstName().toLowerCase().replaceAll("\\s+", "");
-            	String last = model.getLastName().toLowerCase().replaceAll("\\s+", "");
-
-            	// base slug (no spaces)
-            	String baseSlug = first + "-" + last;
-            	String slug = baseSlug;
-
-            	// check uniqueness & auto-increment
-            	int counter = 2;
-            	while (userprofRepo.findByUrl(slug).isPresent()) {
-            	    slug = baseSlug + counter;
-            	    counter++;
-            	}
-
-            	userData.setUrl(slug);
-            	// ---------- Socials ----------
-            	if (model.getSocials() != null) {
-                    userData.setSocials(
-                            model.getSocials()
-                                    .stream()
-                                    .map(s -> new UserProfile.Social(s.getNetwork(), s.getUrl()))
-                                    .toList()
-                    );
-                }
-
-                // ---------- Experience ----------
-                if (model.getExperience() != null) {
-                    userData.setExperience(
-                            model.getExperience()
-                                    .stream()
-                                    .map(e -> new UserProfile.Experience(
-                                            e.getCompanyName(),
-                                            e.getJobTitle(),
-                                            e.getStartDate(),
-                                            e.getEndDate(),
-                                            e.getDescription()
-                                    ))
-                                    .toList()
-                    );
-                }
-
-                // ---------- Education ----------
-                if (model.getEducation() != null) {
-                    userData.setEducation(
-                            model.getEducation()
-                                    .stream()
-                                    .map(ed -> new UserProfile.Education(
-                                            ed.getInstitutionName(),
-                                            ed.getDegree(),
-                                            ed.getFieldOfStudy(),
-                                            ed.getStartDate(),
-                                            ed.getEndDate(),
-                                            ed.getScore()
-                                    ))
-                                    .toList()
-                    );
-                }
-
-                // ---------- Projects ----------
-                if (model.getProjects() != null) {
-                    userData.setProjects(
-                            model.getProjects()
-                                    .stream()
-                                    .map(p -> new UserProfile.Project(
-                                            p.getTitle(),
-                                            p.getTechStack(),
-                                            p.getProjectUrl(),
-                                            p.getRepoUrl(),
-                                            p.getDescription()
-                                    ))
-                                    .toList()
-                    );
-                }
-
-            	// ---------- Resume ----------
-            	userData.setResume(model.getResume());
-            	userData.setProfilePic(model.getProfilePic());
-            	
-            	userprofRepo.save(userData);
-            }
-            else {
-            	
-            	return response.AppResponse("Notfound", null,null);
-            	
-            }
-            
-            return response.AppResponse("RegSuccess", null,null);
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw ex;
-        }
-    }
-    
-    
-    
-    public ResponseEntity<ApiResponses> getcompleteProfileService(ResponseBean response,String authToken) {
-
-        try {
-           if(authToken.isBlank() || authToken.isEmpty()) {
-			return response.AppResponse("Nulltype", null, null);
-		}
-		
-		if(!tokenservice.validateTokenAndReturnBool(authToken)) {
-			throw new GlobalExceptionHandler.ExpiredException();
-		}
-        	String[] tdata = tokenservice.decodeJWT(authToken);
-            String uuid = tdata[1];
-            
-          
-            Optional<UserProfile> profData=userprofRepo.findByUuid(uuid);
-            
-            if(profData.isPresent()) {            
-            return response.AppResponse("Success", null,profData.get());
-            }
-            else {
-            	 return response.AppResponse("Notfound", null,null);
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw ex;
-        }
-    }
-    
-    
-    public ResponseEntity<ApiResponses> getPortfolioService(CommonReqModel model,ResponseBean response) {
-
-        try {
-          
-        	
-          
-            Optional<UserProfile> profData=userprofRepo.findByUrl(model.getSlug());
-            
-            if(profData.isPresent()) {            
-            return response.AppResponse("Success", null,profData.get());
-            }
-            else {
-            	 return response.AppResponse("Notfound", null,null);
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw ex;
-        }
-    }
-    
-    
-    public ResponseEntity<ApiResponses> getbillListService(ResponseBean response,String authToken) {
-
-        try {
-           if(authToken.isBlank() || authToken.isEmpty()) {
-			return response.AppResponse("Nulltype", null, null);
-		}
-		
-		if(!tokenservice.validateTokenAndReturnBool(authToken)) {
-			throw new GlobalExceptionHandler.ExpiredException();
-		}
-        	String[] tdata = tokenservice.decodeJWT(authToken);
-            String uuid = tdata[1];
-            
-          
-            List<PaymentData> billData=paymentdataRepo.findByUuid(uuid);
-            
-            if(!billData.isEmpty()) {            
-            return response.AppResponse("Success", null,billData);
-            }
-            else {
-            	 return response.AppResponse("Notfound", null,null);
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw ex;
-        }
-    }
-    
-    
-    
-    public ResponseEntity<ApiResponses> checkuuidService(ResponseBean response, CommonReqModel model) {
-
-        try {
-            if (model.getUuid().isEmpty()) {
-                return response.AppResponse("Nulltype", null, null);
-            }
-            
-            
-            Optional<MasUser> userData=userRepo.findByUuidAndActiveFlag(model.getUuid(), "Y");
-
-           if(userData.isPresent()) {
-        	   return response.AppResponse("Found", null,null);
-           }
-           else {
-        	   return response.AppResponse("SuccessF", null,null);
-           }
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw ex;
-        }
-    }
-    @Transactional(rollbackFor = Exception.class)
- public ResponseEntity<ApiResponses> subscribeService(ResponseBean response, 
- String authToken,Map<String,Object> rzrData) {
-
-    try {
-        if (authToken == null || authToken.isBlank()) {
-            return response.AppResponse("Nulltype", null, null);
-        }
-
-        if (!tokenservice.validateTokenAndReturnBool(authToken)) {
-            throw new GlobalExceptionHandler.ExpiredException();
-        }
-
-        System.err.println(rzrData);
-        
-        String orderId = (String) rzrData.get("razorpay_order_id");
-	    String paymentId = (String) rzrData.get("razorpay_payment_id");
-	    String signature = (String) rzrData.get("razorpay_signature");
-	    String planId = (String) rzrData.get("planId");
-	    String amount = (String) rzrData.get("amount");
-	    
-	    boolean isValid = RazorpaySignature.verifySignature(
-	            orderId,
-	            paymentId,
-	            signature,
-	            RAZORPAY_KEY_SECRET
-	    );
-	    
-	    if(!isValid) {
-	    	 return response.AppResponse("TryAgain",
-	                 null,
-	                 null);
-	    }
-	    
-	    
-	    
-        String uuid = tokenservice.decodeJWT(authToken)[1];
-
-        UserSubscription userSub = usersubRepo.findByUuid(uuid).get();
-        MasSubscription currentSub = massubRepo.findBySubType(userSub.getSubType()).get();
-
-        String newSubType = planId;
-        MasSubscription requestedSub = massubRepo.findBySubType(newSubType).get();
-
-        int userUsedCount = userSub.getTCount();
-        int currentLimit = currentSub.getLimit();
-        int newLimit = requestedSub.getLimit();
-
-        boolean isExhausted = userUsedCount >= currentLimit;
-
-        // ---------------- RULE 1: If user tries to downgrade ----------------
-        if (!isUpgradeAllowed(userSub.getSubType(), newSubType)) {
-
-            // downgrade allowed ONLY IF exhausted
-            if (!isExhausted) {
-                return response.AppResponse("DownGradeNotAllowed",
-                        null,
-                        currentSub.getSubName());
-            }
-        }
-
-        // ---------------- RULE 2: Same plan purchase ----------------
-        if (userSub.getSubType().equalsIgnoreCase(newSubType)) {
-
-            // if still has remaining count → block
-            if (!isExhausted) {
-                return response.AppResponse("SubExists",
-                        null,
-                        currentSub.getSubName());
-            }
-
-            // exhausted → allow repurchase (reset count)
-            userSub.setTCount(0);
-            usersubRepo.save(userSub);
-
-            PaymentData payment=new PaymentData();
-    	    payment.setUuid(uuid);
-    	    payment.setEntryTs(Instant.now());
-    	    payment.setOrderId(orderId);
-    	    payment.setPaymentId(paymentId);
-    	    payment.setSignature(signature);
-    	    payment.setAmount(amount);
-            
-    	    
-    	    paymentdataRepo.save(payment);
-            return response.AppResponse("ReSubscribed",
-                    null,
-                    currentSub.getSubName());
-        }
-
-        // ---------------- RULE 3: Upgrade OR Exhausted Downgrade ----------------
-        userSub.setSubType(newSubType);
-        userSub.setTCount(0);
-        usersubRepo.save(userSub);
-        
-        PaymentData payment=new PaymentData();
-	    payment.setUuid(uuid);
-	    payment.setEntryTs(Instant.now());
-	    payment.setOrderId(orderId);
-	    payment.setPaymentId(paymentId);
-	    payment.setSignature(signature);
-	    payment.setAmount(amount);
-	    paymentdataRepo.save(payment);
-        
-        return response.AppResponse("ReSubscribed",
-                null,
-                requestedSub.getSubName());
-
-    } catch (Exception ex) {
-        ex.printStackTrace();
-        throw ex;
-    }
-}
-
- 
- 
- public ResponseEntity<ApiResponses> saveFeedbackService(ResponseBean response, CommonReqModel model, String authToken) {
-
-	    try {
-	        if (authToken == null || authToken.isBlank()) {
-	            return response.AppResponse("Nulltype", null, null);
-	        }
-
-	        if (!tokenservice.validateTokenAndReturnBool(authToken)) {
-	            throw new GlobalExceptionHandler.ExpiredException();
-	        }
-
-	        String uuid = tokenservice.decodeJWT(authToken)[1];
-
-	        
-	        UserFeedback userFeedback=new UserFeedback();
-	        
-	        userFeedback.setUuid(uuid);
-	        userFeedback.setRating(model.getRating());
-	        userFeedback.setFeedback(model.getFeedback() != null ? model.getFeedback() : "");
-
-	        userfeedbackRepo.save(userFeedback);
-	        
-	        return response.AppResponse("fSuccess",
-	                null,
-	                null);
-
-	    } catch (Exception ex) {
-	        ex.printStackTrace();
-	        throw ex;
-	    }
 	}
 
- public ResponseEntity<ApiResponses> saveDailQSService(ResponseBean response, CommonReqModel model, String authToken) {
+	public ResponseEntity<ApiResponses> completeProfileService(ResponseBean response, CommonReqModel model,
+			String authToken) {
 
-	    try {
-	        if (authToken == null || authToken.isBlank()) {
-	            return response.AppResponse("Nulltype", null, null);
-	        }
+		try {
+			if (authToken.isBlank() || authToken.isEmpty()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
 
-	        if (!tokenservice.validateTokenAndReturnBool(authToken)) {
-	            throw new GlobalExceptionHandler.ExpiredException();
-	        }
+			if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+				throw new GlobalExceptionHandler.ExpiredException();
+			}
+			String[] tdata = tokenservice.decodeJWT(authToken);
+			String uuid = tdata[1];
 
-	        System.err.println(model.getAnswer());
-	        
-	        String uuid = tokenservice.decodeJWT(authToken)[1];
+			Optional<UserProfile> profData = userprofRepo.findByUuid(uuid);
 
-	        
-	        UserSubmission userFeedback=new UserSubmission();
-	        
-	        userFeedback.setUuid(uuid);
-	        userFeedback.setQsId(model.getQsId());
-	        userFeedback.setDate(Instant.now());
+			if (profData.isPresent()) {
+				UserProfile userData = profData.get();
+				userData.setFirstName(model.getFirstName());
+				userData.setLastName(model.getLastName());
+				userData.setHeadline(model.getHeadline());
+				userData.setEmail(model.getEmail());
+				userData.setMobile(model.getMobile());
+				userData.setCity(model.getCity());
+				userData.setCountry(model.getCountry());
 
-	        submissionRepo.save(userFeedback);
+				userData.setSummary(model.getSummary());
+				userData.setSkills(model.getSkills());
 
-	        Optional<DailyQs> qdata = qsRepo.findByQsId(model.getQsId());
-	        
-	        if(qdata.get().getAnswer().equals(model.getAnswer())) {
-	        	  
-	            Leaderboard lBoardData=leaderoardRepo.findByUuid(uuid).get();
-	            lBoardData.setScore(lBoardData.getScore()+5);
-	            
-	            leaderoardRepo.save(lBoardData);
-	            
-	            UserSubscription userSubscription=usersubRepo.findByUuid(uuid).get();
-	            
-	            userSubscription.setCoin(userSubscription.getCoin()+1);
-	            
-	            usersubRepo.save(userSubscription);
-	            
-	            return response.AppResponse("fSuccess",
-		                null,
-		                qdata.get().getAnswer());
-	        }
-	        
-	        return response.AppResponse("fSuccess",
-	                null,
-	                qdata.get().getAnswer());
+				// ---------- Socials ----------
+				if (model.getSocials() != null) {
+					userData.setSocials(model.getSocials().stream()
+							.map(s -> new UserProfile.Social(s.getNetwork(), s.getUrl())).toList());
+				}
 
-	    } catch (Exception ex) {
-	        ex.printStackTrace();
-	        throw ex;
-	    }
-	} 
- 
- 
- public ResponseEntity<ApiResponses> leaserboardService(ResponseBean response, String authToken) {
+				// ---------- Experience ----------
+				if (model.getExperience() != null) {
+					userData.setExperience(
+							model.getExperience().stream().map(e -> new UserProfile.Experience(e.getCompanyName(),
+									e.getJobTitle(), e.getStartDate(), e.getEndDate(), e.getDescription())).toList());
+				}
 
-	    try {
-	        if (authToken == null || authToken.isBlank()) {
-	            return response.AppResponse("Nulltype", null, null);
-	        }
+				// ---------- Education ----------
+				if (model.getEducation() != null) {
+					userData.setEducation(
+							model.getEducation().stream()
+									.map(ed -> new UserProfile.Education(ed.getInstitutionName(), ed.getDegree(),
+											ed.getFieldOfStudy(), ed.getStartDate(), ed.getEndDate(), ed.getScore()))
+									.toList());
+				}
 
-	        if (!tokenservice.validateTokenAndReturnBool(authToken)) {
-	            throw new GlobalExceptionHandler.ExpiredException();
-	        }
+				// ---------- Projects ----------
+				if (model.getProjects() != null) {
+					userData.setProjects(model.getProjects().stream().map(p -> new UserProfile.Project(p.getTitle(),
+							p.getTechStack(), p.getProjectUrl(), p.getRepoUrl(), p.getDescription())).toList());
+				}
 
-	        String[] tdata = tokenservice.decodeJWT(authToken);
-	        String uuid = tdata[1];
+				// ------------Certificate----------
 
-	        // 1) Fetch top 10
-	        Pageable top10 = PageRequest.of(0, 10);
-	        List<Leaderboard> result = leaderoardRepo.findAllByOrderByScoreDesc(top10);
+				if (model.getCertifications() != null) {
+					userData.setCertifications(
+							model.getCertifications().stream().map(e -> new UserProfile.Certificate(e.getName(),
+									e.getIssuingOrganization(), e.getIssueDate(), e.getCredentialUrl())).toList());
+				}
 
-	        // UUID list of top 10
-	        List<String> uuidList = result.stream()
-	                .map(Leaderboard::getUuid)
-	                .collect(Collectors.toList());
+				// ------------Language-----------
 
-	        // 2) Prepare final response list
-	        List<LeaderboardDTO> resData = new ArrayList<>();
+				if (model.getLanguages() != null) {
+					userData.setLanguages(model.getLanguages().stream()
+							.map(e -> new UserProfile.Language(e.getName(), e.getProficiency())).toList());
+				}
 
-	        // 3) Add top 10 users
-	        int rank = 1;
-	        for (Leaderboard row : result) {
+				// -----------Achievement---------
 
-	            Optional<MasUser> userOpt =
-	                    userRepo.findByUuidAndActiveFlag(row.getUuid(), "Y");
+				if (model.getAchievements() != null) {
+					userData.setAchievements(model.getAchievements().stream()
+							.map(e -> new UserProfile.Achievement(e.getTitle(), e.getDescription())).toList());
+				}
 
-	            if (userOpt.isEmpty()) continue;
+				// ---------- Resume ----------
+				userData.setResume(model.getResume());
+				userData.setProfilePic(model.getProfilePic());
 
-	            LeaderboardDTO dto = new LeaderboardDTO();
-	            dto.setName(userOpt.get().getUserName());
-	            dto.setScore(row.getScore());
-	            dto.setRank(rank);
+				userprofRepo.save(userData);
+			} else {
 
-	            resData.add(dto);
-	            rank++;
-	        }
+				UserProfile userData = new UserProfile();
 
-	        // 4) Add current user if not in top 10
-	        if (!uuidList.contains(uuid)) {
+				userData.setUuid(uuid);
 
-	            // Fetch current user score
-	            Leaderboard currentUser = leaderoardRepo.findByUuid(uuid).get();
+				userData.setFirstName(model.getFirstName());
+				userData.setLastName(model.getLastName());
+				userData.setHeadline(model.getHeadline());
+				userData.setEmail(model.getEmail());
+				userData.setMobile(model.getPhone());
+				userData.setCity(model.getCity());
+				userData.setCountry(model.getCountry());
 
-	            // Fetch user details
-	            Optional<MasUser> userOpt =
-	                    userRepo.findByUuidAndActiveFlag(uuid, "Y");
+				userData.setSummary(model.getSummary());
+				userData.setSkills(model.getSkills());
 
-	            // CALCULATE GLOBAL RANK
-	            List<Leaderboard> all = leaderoardRepo.findAllByOrderByScoreDesc(PageRequest.of(0, 1000));
-	            int userRank = IntStream.range(0, all.size())
-	                    .filter(i -> all.get(i).getUuid().equals(uuid))
-	                    .findFirst()
-	                    .orElse(-1) + 1;
+				// ---------- Socials ----------
+				if (model.getSocials() != null) {
+					userData.setSocials(model.getSocials().stream()
+							.map(s -> new UserProfile.Social(s.getNetwork(), s.getUrl())).toList());
+				}
 
-	            LeaderboardDTO dto = new LeaderboardDTO();
-	            dto.setName(userOpt.get().getUserName());
-	            dto.setScore(currentUser.getScore());
-	            dto.setRank(userRank);
+				// ---------- Experience ----------
+				if (model.getExperience() != null) {
+					userData.setExperience(
+							model.getExperience().stream().map(e -> new UserProfile.Experience(e.getCompanyName(),
+									e.getJobTitle(), e.getStartDate(), e.getEndDate(), e.getDescription())).toList());
+				}
 
-	            resData.add(dto);
-	        }
+				// ---------- Education ----------
+				if (model.getEducation() != null) {
+					userData.setEducation(
+							model.getEducation().stream()
+									.map(ed -> new UserProfile.Education(ed.getInstitutionName(), ed.getDegree(),
+											ed.getFieldOfStudy(), ed.getStartDate(), ed.getEndDate(), ed.getScore()))
+									.toList());
+				}
 
-	        return response.AppResponse("Success", null, resData);
+				// ---------- Projects ----------
+				if (model.getProjects() != null) {
+					userData.setProjects(model.getProjects().stream().map(p -> new UserProfile.Project(p.getTitle(),
+							p.getTechStack(), p.getProjectUrl(), p.getRepoUrl(), p.getDescription())).toList());
+				}
 
-	    } catch (Exception ex) {
-	        ex.printStackTrace();
-	        throw ex;
-	    }
+				// ---------- Resume ----------
+				userData.setResume(model.getResume());
+				userData.setProfilePic(model.getProfilePic());
+				userprofRepo.save(userData);
+
+				MasUser user = userRepo.findByUuidAndActiveFlag(uuid, "Y").get();
+
+				user.setComplete(true);
+
+				userRepo.save(user);
+
+			}
+
+			return response.AppResponse("RegSuccess", null, null);
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
 	}
 
- 
- public ResponseEntity<ApiResponses> checksubscribeService(ResponseBean response, CommonReqModel model, String authToken) {
+	public ResponseEntity<ApiResponses> savePortfolioService(ResponseBean response, CommonReqModel model,
+			String authToken) {
 
-	    try {
-	        if (authToken == null || authToken.isBlank()) {
-	            return response.AppResponse("Nulltype", null, null);
-	        }
+		try {
+			if (authToken.isBlank() || authToken.isEmpty()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
 
-	        if (!tokenservice.validateTokenAndReturnBool(authToken)) {
-	            throw new GlobalExceptionHandler.ExpiredException();
-	        }
+			if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+				throw new GlobalExceptionHandler.ExpiredException();
+			}
+			String[] tdata = tokenservice.decodeJWT(authToken);
+			String uuid = tdata[1];
 
-	        String uuid = tokenservice.decodeJWT(authToken)[1];
+			Optional<UserProfile> profData = userprofRepo.findByUuid(uuid);
 
-	        UserSubscription userSub = usersubRepo.findByUuid(uuid).get();
-	        MasSubscription currentSub = massubRepo.findBySubType(userSub.getSubType()).get();
+			if (profData.isPresent()) {
+				UserProfile userData = profData.get();
+				userData.setFirstName(model.getFirstName());
+				userData.setLastName(model.getLastName());
+				userData.setHeadline(model.getHeadline());
+				userData.setEmail(model.getEmail());
+				userData.setMobile(model.getMobile());
+				userData.setCity(model.getCity());
+				userData.setCountry(model.getCountry());
+				userData.setTemplateId(model.getTemplateId());
+				userData.setSummary(model.getSummary());
+				userData.setSkills(model.getSkills());
+				String first = model.getFirstName().toLowerCase().replaceAll("\\s+", "");
+				String last = model.getLastName().toLowerCase().replaceAll("\\s+", "");
 
-	        String newSubType = model.getType();
-	        MasSubscription requestedSub = massubRepo.findBySubType(newSubType).get();
+				// base slug (no spaces)
+				String baseSlug = first + "-" + last;
+				String slug = baseSlug;
 
-	        int userUsedCount = userSub.getTCount();
-	        int currentLimit = currentSub.getLimit();
-	        int newLimit = requestedSub.getLimit();
+				// check uniqueness & auto-increment
+				int counter = 2;
+				while (userprofRepo.findByUrl(slug).isPresent()) {
+					slug = baseSlug + counter;
+					counter++;
+				}
 
-	        boolean isExhausted = userUsedCount >= currentLimit;
+				userData.setUrl(slug);
+				// ---------- Socials ----------
+				if (model.getSocials() != null) {
+					userData.setSocials(model.getSocials().stream()
+							.map(s -> new UserProfile.Social(s.getNetwork(), s.getUrl())).toList());
+				}
 
-	        // ---------------- RULE 1: If user tries to downgrade ----------------
-	        if (!isUpgradeAllowed(userSub.getSubType(), newSubType)) {
+				// ---------- Experience ----------
+				if (model.getExperience() != null) {
+					userData.setExperience(
+							model.getExperience().stream().map(e -> new UserProfile.Experience(e.getCompanyName(),
+									e.getJobTitle(), e.getStartDate(), e.getEndDate(), e.getDescription())).toList());
+				}
 
-	            // downgrade allowed ONLY IF exhausted
-	            if (!isExhausted) {
-	                return response.AppResponse("DownGradeNotAllowed",
-	                        null,
-	                        currentSub.getSubName());
-	            }
-	        }
+				// ---------- Education ----------
+				if (model.getEducation() != null) {
+					userData.setEducation(
+							model.getEducation().stream()
+									.map(ed -> new UserProfile.Education(ed.getInstitutionName(), ed.getDegree(),
+											ed.getFieldOfStudy(), ed.getStartDate(), ed.getEndDate(), ed.getScore()))
+									.toList());
+				}
 
-	        // ---------------- RULE 2: Same plan purchase ----------------
-	        if (userSub.getSubType().equalsIgnoreCase(newSubType)) {
+				// ---------- Projects ----------
+				if (model.getProjects() != null) {
+					userData.setProjects(model.getProjects().stream().map(p -> new UserProfile.Project(p.getTitle(),
+							p.getTechStack(), p.getProjectUrl(), p.getRepoUrl(), p.getDescription())).toList());
+				}
 
-	            // if still has remaining count → block
-	            if (!isExhausted) {
-	                return response.AppResponse("SubExists",
-	                        null,
-	                        currentSub.getSubName());
-	            }
+				// ---------- Resume ----------
+				userData.setResume(model.getResume());
+				userData.setProfilePic(model.getProfilePic());
 
-	            
+				userprofRepo.save(userData);
+			} else {
 
-	            return response.AppResponse("ReSubscribed",
-	                    null,
-	                    currentSub.getSubName());
-	        }
+				return response.AppResponse("Notfound", null, null);
 
-	      
+			}
 
-	        return response.AppResponse("ReSubscribed",
-	                null,
-	                requestedSub.getSubName());
+			return response.AppResponse("RegSuccess", null, null);
 
-	    } catch (Exception ex) {
-	        ex.printStackTrace();
-	        throw ex;
-	    }
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
 	}
 
- 
-   private boolean isUpgradeAllowed(String current, String next) {
+	public ResponseEntity<ApiResponses> getcompleteProfileService(ResponseBean response, String authToken) {
 
-	    // Ordering: Basic < Silver < Gold
-	    int rankCurrent = getRank(current);
-	    int rankNext = getRank(next);
-	    System.out.println(current+"--"+next);
-	    System.out.println(rankCurrent+"--"+rankNext);
-	    return rankNext >= rankCurrent;  // allow upgrade or same plan
+		try {
+			if (authToken.isBlank() || authToken.isEmpty()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
+
+			if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+				throw new GlobalExceptionHandler.ExpiredException();
+			}
+			String[] tdata = tokenservice.decodeJWT(authToken);
+			String uuid = tdata[1];
+
+			Optional<UserProfile> profData = userprofRepo.findByUuid(uuid);
+
+			if (profData.isPresent()) {
+				return response.AppResponse("Success", null, profData.get());
+			} else {
+				return response.AppResponse("Notfound", null, null);
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
+	}
+
+	public ResponseEntity<ApiResponses> getPortfolioService(CommonReqModel model, ResponseBean response) {
+
+		try {
+
+			Optional<UserProfile> profData = userprofRepo.findByUrl(model.getSlug());
+
+			if (profData.isPresent()) {
+				return response.AppResponse("Success", null, profData.get());
+			} else {
+				return response.AppResponse("Notfound", null, null);
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
+	}
+
+	public ResponseEntity<ApiResponses> getbillListService(ResponseBean response, String authToken) {
+
+		try {
+			if (authToken.isBlank() || authToken.isEmpty()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
+
+			if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+				throw new GlobalExceptionHandler.ExpiredException();
+			}
+			String[] tdata = tokenservice.decodeJWT(authToken);
+			String uuid = tdata[1];
+
+			List<PaymentData> billData = paymentdataRepo.findByUuid(uuid);
+
+			if (!billData.isEmpty()) {
+				return response.AppResponse("Success", null, billData);
+			} else {
+				return response.AppResponse("Notfound", null, null);
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
+	}
+
+	public ResponseEntity<ApiResponses> checkuuidService(ResponseBean response, CommonReqModel model) {
+
+		try {
+			if (model.getUuid().isEmpty()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
+
+			Optional<MasUser> userData = userRepo.findByUuidAndActiveFlag(model.getUuid(), "Y");
+
+			if (userData.isPresent()) {
+				return response.AppResponse("Found", null, null);
+			} else {
+				return response.AppResponse("SuccessF", null, null);
+			}
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
+	}
+
+	@Transactional(rollbackFor = Exception.class)
+	public ResponseEntity<ApiResponses> subscribeService(ResponseBean response, String authToken,
+			Map<String, Object> rzrData) {
+
+		try {
+			if (authToken == null || authToken.isBlank()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
+
+			if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+				throw new GlobalExceptionHandler.ExpiredException();
+			}
+
+			System.err.println(rzrData);
+
+			String orderId = (String) rzrData.get("razorpay_order_id");
+			String paymentId = (String) rzrData.get("razorpay_payment_id");
+			String signature = (String) rzrData.get("razorpay_signature");
+			String planId = (String) rzrData.get("planId");
+			String amount = (String) rzrData.get("amount");
+
+			boolean isValid = RazorpaySignature.verifySignature(orderId, paymentId, signature, RAZORPAY_KEY_SECRET);
+
+			if (!isValid) {
+				return response.AppResponse("TryAgain", null, null);
+			}
+
+			String uuid = tokenservice.decodeJWT(authToken)[1];
+
+			UserSubscription userSub = usersubRepo.findByUuid(uuid).get();
+			MasSubscription currentSub = massubRepo.findBySubType(userSub.getSubType()).get();
+
+			String newSubType = planId;
+			MasSubscription requestedSub = massubRepo.findBySubType(newSubType).get();
+
+			int userUsedCount = userSub.getTCount();
+			int currentLimit = currentSub.getLimit();
+			int newLimit = requestedSub.getLimit();
+
+			boolean isExhausted = userUsedCount >= currentLimit;
+
+			// ---------------- RULE 1: If user tries to downgrade ----------------
+			if (!isUpgradeAllowed(userSub.getSubType(), newSubType)) {
+
+				// downgrade allowed ONLY IF exhausted
+				if (!isExhausted) {
+					return response.AppResponse("DownGradeNotAllowed", null, currentSub.getSubName());
+				}
+			}
+
+			// ---------------- RULE 2: Same plan purchase ----------------
+			if (userSub.getSubType().equalsIgnoreCase(newSubType)) {
+
+				// if still has remaining count → block
+				if (!isExhausted) {
+					return response.AppResponse("SubExists", null, currentSub.getSubName());
+				}
+
+				// exhausted → allow repurchase (reset count)
+				userSub.setTCount(0);
+				usersubRepo.save(userSub);
+
+				PaymentData payment = new PaymentData();
+				payment.setUuid(uuid);
+				payment.setEntryTs(Instant.now());
+				payment.setOrderId(orderId);
+				payment.setPaymentId(paymentId);
+				payment.setSignature(signature);
+				payment.setAmount(amount);
+
+				paymentdataRepo.save(payment);
+				return response.AppResponse("ReSubscribed", null, currentSub.getSubName());
+			}
+
+			// ---------------- RULE 3: Upgrade OR Exhausted Downgrade ----------------
+			userSub.setSubType(newSubType);
+			userSub.setTCount(0);
+			usersubRepo.save(userSub);
+
+			PaymentData payment = new PaymentData();
+			payment.setUuid(uuid);
+			payment.setEntryTs(Instant.now());
+			payment.setOrderId(orderId);
+			payment.setPaymentId(paymentId);
+			payment.setSignature(signature);
+			payment.setAmount(amount);
+			paymentdataRepo.save(payment);
+
+			return response.AppResponse("ReSubscribed", null, requestedSub.getSubName());
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
+	}
+
+	public ResponseEntity<ApiResponses> saveFeedbackService(ResponseBean response, CommonReqModel model,
+			String authToken) {
+
+		try {
+			if (authToken == null || authToken.isBlank()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
+
+			if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+				throw new GlobalExceptionHandler.ExpiredException();
+			}
+
+			String uuid = tokenservice.decodeJWT(authToken)[1];
+
+			UserFeedback userFeedback = new UserFeedback();
+
+			userFeedback.setUuid(uuid);
+			userFeedback.setRating(model.getRating());
+			userFeedback.setFeedback(model.getFeedback() != null ? model.getFeedback() : "");
+
+			userfeedbackRepo.save(userFeedback);
+
+			return response.AppResponse("fSuccess", null, null);
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
+	}
+
+	public ResponseEntity<ApiResponses> saveDailQSService(ResponseBean response, CommonReqModel model,
+			String authToken) {
+
+		try {
+			if (authToken == null || authToken.isBlank()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
+
+			if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+				throw new GlobalExceptionHandler.ExpiredException();
+			}
+
+			System.err.println(model.getAnswer());
+
+			String uuid = tokenservice.decodeJWT(authToken)[1];
+
+			UserSubmission userFeedback = new UserSubmission();
+
+			userFeedback.setUuid(uuid);
+			userFeedback.setQsId(model.getQsId());
+			userFeedback.setDate(Instant.now());
+
+			submissionRepo.save(userFeedback);
+
+			Optional<DailyQs> qdata = qsRepo.findByQsId(model.getQsId());
+
+			if (qdata.get().getAnswer().equals(model.getAnswer())) {
+
+				Leaderboard lBoardData = leaderoardRepo.findByUuid(uuid).get();
+				lBoardData.setScore(lBoardData.getScore() + 5);
+
+				leaderoardRepo.save(lBoardData);
+
+				UserSubscription userSubscription = usersubRepo.findByUuid(uuid).get();
+
+				userSubscription.setCoin(userSubscription.getCoin() + 1);
+
+				usersubRepo.save(userSubscription);
+
+				return response.AppResponse("fSuccess", null, qdata.get().getAnswer());
+			}
+
+			return response.AppResponse("fSuccess", null, qdata.get().getAnswer());
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
+	}
+
+	public ResponseEntity<ApiResponses> leaserboardService(ResponseBean response, String authToken) {
+
+		try {
+			if (authToken == null || authToken.isBlank()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
+
+			if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+				throw new GlobalExceptionHandler.ExpiredException();
+			}
+
+			String[] tdata = tokenservice.decodeJWT(authToken);
+			String uuid = tdata[1];
+
+			// 1) Fetch top 10
+			Pageable top10 = PageRequest.of(0, 10);
+			List<Leaderboard> result = leaderoardRepo.findAllByOrderByScoreDesc(top10);
+
+			// UUID list of top 10
+			List<String> uuidList = result.stream().map(Leaderboard::getUuid).collect(Collectors.toList());
+
+			// 2) Prepare final response list
+			List<LeaderboardDTO> resData = new ArrayList<>();
+
+			// 3) Add top 10 users
+			int rank = 1;
+			for (Leaderboard row : result) {
+
+				Optional<MasUser> userOpt = userRepo.findByUuidAndActiveFlag(row.getUuid(), "Y");
+
+				if (userOpt.isEmpty())
+					continue;
+
+				LeaderboardDTO dto = new LeaderboardDTO();
+				dto.setName(userOpt.get().getUserName());
+				dto.setScore(row.getScore());
+				dto.setRank(rank);
+
+				resData.add(dto);
+				rank++;
+			}
+
+			// 4) Add current user if not in top 10
+			if (!uuidList.contains(uuid)) {
+
+				// Fetch current user score
+				Leaderboard currentUser = leaderoardRepo.findByUuid(uuid).get();
+
+				// Fetch user details
+				Optional<MasUser> userOpt = userRepo.findByUuidAndActiveFlag(uuid, "Y");
+
+				// CALCULATE GLOBAL RANK
+				List<Leaderboard> all = leaderoardRepo.findAllByOrderByScoreDesc(PageRequest.of(0, 1000));
+				int userRank = IntStream.range(0, all.size()).filter(i -> all.get(i).getUuid().equals(uuid)).findFirst()
+						.orElse(-1) + 1;
+
+				LeaderboardDTO dto = new LeaderboardDTO();
+				dto.setName(userOpt.get().getUserName());
+				dto.setScore(currentUser.getScore());
+				dto.setRank(userRank);
+
+				resData.add(dto);
+			}
+
+			return response.AppResponse("Success", null, resData);
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
+	}
+
+	public ResponseEntity<ApiResponses> checksubscribeService(ResponseBean response, CommonReqModel model,
+			String authToken) {
+
+		try {
+			if (authToken == null || authToken.isBlank()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
+
+			if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+				throw new GlobalExceptionHandler.ExpiredException();
+			}
+
+			String uuid = tokenservice.decodeJWT(authToken)[1];
+
+			UserSubscription userSub = usersubRepo.findByUuid(uuid).get();
+			MasSubscription currentSub = massubRepo.findBySubType(userSub.getSubType()).get();
+
+			String newSubType = model.getType();
+			MasSubscription requestedSub = massubRepo.findBySubType(newSubType).get();
+
+			int userUsedCount = userSub.getTCount();
+			int currentLimit = currentSub.getLimit();
+			int newLimit = requestedSub.getLimit();
+
+			boolean isExhausted = userUsedCount >= currentLimit;
+
+			// ---------------- RULE 1: If user tries to downgrade ----------------
+			if (!isUpgradeAllowed(userSub.getSubType(), newSubType)) {
+
+				// downgrade allowed ONLY IF exhausted
+				if (!isExhausted) {
+					return response.AppResponse("DownGradeNotAllowed", null, currentSub.getSubName());
+				}
+			}
+
+			// ---------------- RULE 2: Same plan purchase ----------------
+			if (userSub.getSubType().equalsIgnoreCase(newSubType)) {
+
+				// if still has remaining count → block
+				if (!isExhausted) {
+					return response.AppResponse("SubExists", null, currentSub.getSubName());
+				}
+
+				return response.AppResponse("ReSubscribed", null, currentSub.getSubName());
+			}
+
+			return response.AppResponse("ReSubscribed", null, requestedSub.getSubName());
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
+	}
+
+	private boolean isUpgradeAllowed(String current, String next) {
+
+		// Ordering: Basic < Silver < Gold
+		int rankCurrent = getRank(current);
+		int rankNext = getRank(next);
+		System.out.println(current + "--" + next);
+		System.out.println(rankCurrent + "--" + rankNext);
+		return rankNext >= rankCurrent; // allow upgrade or same plan
 	}
 
 	private int getRank(String sub) {
-	    return switch (sub.toLowerCase()) {
-	        case "b" -> 1;
-	        case "s" -> 2;
-	        case "g" -> 3;
-	        default -> 0;
-	    };
+		return switch (sub.toLowerCase()) {
+		case "b" -> 1;
+		case "s" -> 2;
+		case "g" -> 3;
+		default -> 0;
+		};
 	}
 
-    
-    
-    public ResponseEntity<ApiResponses> profileService(ResponseBean response, String authToken) {
+	public ResponseEntity<ApiResponses> profileService(ResponseBean response, String authToken) {
 
-        try {
-        	if(authToken.isBlank() || authToken.isEmpty()) {
+		try {
+			if (authToken.isBlank() || authToken.isEmpty()) {
 				return response.AppResponse("Nulltype", null, null);
 			}
-			
-			if(!tokenservice.validateTokenAndReturnBool(authToken)) {
+
+			if (!tokenservice.validateTokenAndReturnBool(authToken)) {
 				throw new GlobalExceptionHandler.ExpiredException();
 			}
-            
-            String[] tdata = tokenservice.decodeJWT(authToken);
-            String uuid = tdata[1];
-            MasUser userData=userRepo.findByUuidAndActiveFlag(uuid, "Y").get();
-            UserSubscription usesubData =usersubRepo.findByUuid(uuid).get();
-            MasSubscription masSub=massubRepo.findBySubType(usesubData.getSubType()).get();
-            
-            
-            ProfileDTO profile=new ProfileDTO();
-            
-            profile.setName(userData.getUserName());
-            profile.setMobile(userData.getUserMobile());
-            profile.setEmail(userData.getUserEmail());
-            profile.setInstitute(userData.getUserInst());
-            profile.setStream(userData.getStream());
-            profile.setCity(userData.getUserBranch());
-            profile.setSubName(masSub.getSubName());
-            profile.setIntCount(usesubData.getCount());
-            profile.setRefCount(usesubData.getRCount());
-            profile.setRef(userData.getRefCode());
-            profile.setTCount(masSub.getLimit()-usesubData.getTCount());
-            profile.setCreationData(userData.getEntryTs());
-            profile.setCoin(usesubData.getCoin());
-          
-            return response.AppResponse("Success", null,profile);
 
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw ex;
-        }
-    }
-    
-    
-    public ResponseEntity<ApiResponses> viewRecordsService(ResponseBean response, String authToken,String type) {
+			String[] tdata = tokenservice.decodeJWT(authToken);
+			String uuid = tdata[1];
+			MasUser userData = userRepo.findByUuidAndActiveFlag(uuid, "Y").get();
+			UserSubscription usesubData = usersubRepo.findByUuid(uuid).get();
+			MasSubscription masSub = massubRepo.findBySubType(usesubData.getSubType()).get();
 
-        try {
-        	if(authToken.isBlank() || authToken.isEmpty()) {
+			ProfileDTO profile = new ProfileDTO();
+
+			profile.setName(userData.getUserName());
+			profile.setMobile(userData.getUserMobile());
+			profile.setEmail(userData.getUserEmail());
+			profile.setInstitute(userData.getUserInst());
+			profile.setStream(userData.getStream());
+			profile.setCity(userData.getUserBranch());
+			profile.setSubName(masSub.getSubName());
+			profile.setIntCount(usesubData.getCount());
+			profile.setRefCount(usesubData.getRCount());
+			profile.setRef(userData.getRefCode());
+			profile.setTCount(masSub.getLimit() - usesubData.getTCount());
+			profile.setCreationData(userData.getEntryTs());
+			profile.setCoin(usesubData.getCoin());
+
+			return response.AppResponse("Success", null, profile);
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
+	}
+
+	public ResponseEntity<ApiResponses> viewRecordsService(ResponseBean response, String authToken, String type) {
+
+		try {
+			if (authToken.isBlank() || authToken.isEmpty()) {
 				return response.AppResponse("Nulltype", null, null);
 			}
-			
-			if(!tokenservice.validateTokenAndReturnBool(authToken)) {
+
+			if (!tokenservice.validateTokenAndReturnBool(authToken)) {
 				throw new GlobalExceptionHandler.ExpiredException();
 			}
-            
-            String[] tdata = tokenservice.decodeJWT(authToken);
-            String uuid = tdata[1];
-            List<InterviewFeedback> feedback=null;
-            if("A".equals(type)) {
-            	feedback=interviewFeedbackRepository.findByUuid(uuid);
-            }
-            else if("LESS".equals(type)) {
-            	feedback=interviewFeedbackRepository.findByUuidAndTechnicalScoreLessThanOrderByEntryTsDesc(uuid,5.0);
-            }
-            else {
-            	 feedback=interviewFeedbackRepository.findByUuidAndTypeOrderByEntryTsDesc(uuid,type);
-            }
-            
-            
-          if(!feedback.isEmpty()) {
-        	  return response.AppResponse("Success", null,feedback);
-          }
-          else {
-        	  return response.AppResponse("Notfound", null,null);
-          }
-            
-           
 
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw ex;
-        }
-    }
-    
-    public ResponseEntity<ApiResponses> viewDailyQSService(ResponseBean response, String authToken) {
+			String[] tdata = tokenservice.decodeJWT(authToken);
+			String uuid = tdata[1];
+			List<InterviewFeedback> feedback = null;
+			if ("A".equals(type)) {
+				feedback = interviewFeedbackRepository.findByUuid(uuid);
+			} else if ("LESS".equals(type)) {
+				feedback = interviewFeedbackRepository.findByUuidAndTechnicalScoreLessThanOrderByEntryTsDesc(uuid, 5.0);
+			} else {
+				feedback = interviewFeedbackRepository.findByUuidAndTypeOrderByEntryTsDesc(uuid, type);
+			}
 
-        try {
+			if (!feedback.isEmpty()) {
+				return response.AppResponse("Success", null, feedback);
+			} else {
+				return response.AppResponse("Notfound", null, null);
+			}
 
-            if (authToken == null || authToken.isBlank()) {
-                return response.AppResponse("Nulltype", null, null);
-            }
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
+	}
 
-            if (!tokenservice.validateTokenAndReturnBool(authToken)) {
-                throw new GlobalExceptionHandler.ExpiredException();
-            }
+	public ResponseEntity<ApiResponses> viewDailyQSService(ResponseBean response, String authToken) {
 
-            String[] tdata = tokenservice.decodeJWT(authToken);
-            String uuid = tdata[1];
+		try {
 
-            Instant todayStart = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
-            Instant todayEnd = LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+			if (authToken == null || authToken.isBlank()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
 
-            List<DailyQsDTO> dailyQs = new ArrayList<>();
+			if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+				throw new GlobalExceptionHandler.ExpiredException();
+			}
 
-            List<String> tech = List.of("Java", "SQL", "Python", "JavaScript");
+			String[] tdata = tokenservice.decodeJWT(authToken);
+			String uuid = tdata[1];
 
-            // ================================
-            // 1️⃣ CHECK IF TODAY’s QS ALREADY EXISTS
-            // ================================
-            List<TodayQs> todayQsList = todayQsRepo.findByDateBetween(todayStart, todayEnd);
+			Instant todayStart = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+			Instant todayEnd = LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
 
-            List<Long> qsIdsForToday = new ArrayList<>();
-            if (!todayQsList.isEmpty()) {
-                qsIdsForToday = todayQsList.stream()
-                        .map(TodayQs::getQsId)
-                        .collect(Collectors.toList());
-            }
+			List<DailyQsDTO> dailyQs = new ArrayList<>();
 
-            // ================================
-            // 2️⃣ IF NOT EXISTS → GENERATE RANDOM 4 QUESTIONS & SAVE
-            // ================================
-            if (qsIdsForToday.isEmpty()) {
+			List<String> tech = List.of("Java", "SQL", "Python", "JavaScript");
 
-                for (String lang : tech) {
-                    DailyQs qs = qsRepo.findRandomOneByLang(lang).get(0);
+			// ================================
+			// 1️⃣ CHECK IF TODAY’s QS ALREADY EXISTS
+			// ================================
+			List<TodayQs> todayQsList = todayQsRepo.findByDateBetween(todayStart, todayEnd);
 
-                    TodayQs todayQs = new TodayQs();
-                    todayQs.setQsId(qs.getQsId());
-                    todayQs.setDate(Instant.now());
+			List<Long> qsIdsForToday = new ArrayList<>();
+			if (!todayQsList.isEmpty()) {
+				qsIdsForToday = todayQsList.stream().map(TodayQs::getQsId).collect(Collectors.toList());
+			}
 
-                    todayQsRepo.save(todayQs);
+			// ================================
+			// 2️⃣ IF NOT EXISTS → GENERATE RANDOM 4 QUESTIONS & SAVE
+			// ================================
+			if (qsIdsForToday.isEmpty()) {
 
-                    qsIdsForToday.add(qs.getQsId());
-                }
-            }
+				for (String lang : tech) {
+					DailyQs qs = qsRepo.findRandomOneByLang(lang).get(0);
+
+					TodayQs todayQs = new TodayQs();
+					todayQs.setQsId(qs.getQsId());
+					todayQs.setDate(Instant.now());
+
+					todayQsRepo.save(todayQs);
+
+					qsIdsForToday.add(qs.getQsId());
+				}
+			}
 //            System.out.println(qsIdsForToday);
-            // ================================
-            // 3️⃣ FETCH USER SUBMISSION FOR TODAY
-            // ================================
-            List<UserSubmission> submissionDataToday =
-                    submissionRepo.findByUuidAndDateBetween(uuid, todayStart, todayEnd);
+			// ================================
+			// 3️⃣ FETCH USER SUBMISSION FOR TODAY
+			// ================================
+			List<UserSubmission> submissionDataToday = submissionRepo.findByUuidAndDateBetween(uuid, todayStart,
+					todayEnd);
 //            System.out.println(submissionDataToday);
-            
-            Set<Long> submittedTodayIds = submissionDataToday.stream()
-                    .map(UserSubmission::getQsId)
-                    .collect(Collectors.toSet());
+
+			Set<Long> submittedTodayIds = submissionDataToday.stream().map(UserSubmission::getQsId)
+					.collect(Collectors.toSet());
 //            System.err.println(submittedTodayIds);
-            // ================================
-            // 4️⃣ PREPARE RESPONSE USING THE TODAY’s QS
-            // ================================
-            for (Long qsId : qsIdsForToday) {
-                Optional<DailyQs> qdata = qsRepo.findByQsId(qsId);
+			// ================================
+			// 4️⃣ PREPARE RESPONSE USING THE TODAY’s QS
+			// ================================
+			for (Long qsId : qsIdsForToday) {
+				Optional<DailyQs> qdata = qsRepo.findByQsId(qsId);
 //                System.out.println(qdata);
-                if (qdata.isEmpty()) continue;
+				if (qdata.isEmpty())
+					continue;
 
-                DailyQs qs = qdata.get();
-                DailyQsDTO dto = new DailyQsDTO();
+				DailyQs qs = qdata.get();
+				DailyQsDTO dto = new DailyQsDTO();
 
-                dto.setId(qs.getQsId());
-                dto.setLang(qs.getLang());
-                dto.setQuestion(qs.getQuestion());
-                dto.setOptions(new String[]{
-                    qs.getOption1(),
-                    qs.getOption2(),
-                    qs.getOption3(),
-                    qs.getOption4()
-                });
+				dto.setId(qs.getQsId());
+				dto.setLang(qs.getLang());
+				dto.setQuestion(qs.getQuestion());
+				dto.setOptions(new String[] { qs.getOption1(), qs.getOption2(), qs.getOption3(), qs.getOption4() });
 
-                // Mark submit Y/N FOR TODAY
-                if (submittedTodayIds.contains(qs.getQsId())) {
-                    dto.setSubmit("Y");
-                } else {
-                    dto.setSubmit("N");
-                }
+				// Mark submit Y/N FOR TODAY
+				if (submittedTodayIds.contains(qs.getQsId())) {
+					dto.setSubmit("Y");
+				} else {
+					dto.setSubmit("N");
+				}
 
-                dailyQs.add(dto);
-            }
+				dailyQs.add(dto);
+			}
 
-            if (!dailyQs.isEmpty()) {
-                return response.AppResponse("Success", null, dailyQs);
-            } else {
-                return response.AppResponse("Notfound", null, null);
-            }
+			if (!dailyQs.isEmpty()) {
+				return response.AppResponse("Success", null, dailyQs);
+			} else {
+				return response.AppResponse("Notfound", null, null);
+			}
 
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw ex;
-        }
-    }
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
+	}
 
-    
 //    public ResponseEntity<ApiResponses> viewDailyQSService(ResponseBean response, String authToken) {
 //
 //        try {
@@ -1503,222 +1298,193 @@ public class AuthServiceNew {
 //            throw ex;
 //        }
 //    }
-    
-    
-    public ResponseEntity<ApiResponses> otpService(ResponseBean response, CommonReqModel model) throws Exception {
 
-        try {
-            if (model.getUuid().isEmpty() ) {
-                return response.AppResponse("Nulltype", null, null);
-            }
-            int otp = 1000 + new SecureRandom().nextInt(9000);
+	public ResponseEntity<ApiResponses> otpService(ResponseBean response, CommonReqModel model) throws Exception {
+
+		try {
+			if (model.getUuid().isEmpty()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
+			int otp = 1000 + new SecureRandom().nextInt(9000);
 //            System.out.println(11);
-            if("P".equals(model.getType())) {
+			if ("P".equals(model.getType())) {
 //            	System.out.println(12);
-            	
-            	 Optional<MasUser> user=userRepo.findByUuidAndActiveFlag(model.getUuid(), "Y");
-                 
-                 if(!user.isPresent()) {
-                 	return response.AppResponse("Invalid", null, null);
-                 }
+
+				Optional<MasUser> user = userRepo.findByUuidAndActiveFlag(model.getUuid(), "Y");
+
+				if (!user.isPresent()) {
+					return response.AppResponse("Invalid", null, null);
+				}
 //                 System.out.println(user.get());
-                 OTP userDoc = new OTP();
-                                 
-                 
-                 userDoc.setEmailOtp(otp);
-                 userDoc.setUuid(model.getUuid());
-                 
-                 otpRepo.save(userDoc);
-                 
-                 emailServ.sendOtpEmail(user.get().getUserEmail(), otp);
+				OTP userDoc = new OTP();
 
-            }
-            else {
-            	OTP userDoc = new OTP();
-                
+				userDoc.setEmailOtp(otp);
+				userDoc.setUuid(model.getUuid());
 
-                
-                
-                
-                userDoc.setEmailOtp(otp);
-                userDoc.setUuid(model.getUuid());
-                
-                otpRepo.save(userDoc);
-                
-                emailServ.sendOtpEmail(model.getEmail(), otp);
-            }
-           
-            
-            
-      return response.AppResponse("OTPSuccess", null, otp);
+				otpRepo.save(userDoc);
 
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw ex;
-        }
-    }
+				emailServ.sendOtpEmail(user.get().getUserEmail(), otp);
 
-    
-    
-    public ResponseEntity<ApiResponses> forgetPasswordService(ResponseBean response, CommonReqModel model) throws Exception {
+			} else {
+				OTP userDoc = new OTP();
 
-        try {
-            if (model.getUuid().isEmpty() ) {
-                return response.AppResponse("Nulltype", null, null);
-            }
-            
+				userDoc.setEmailOtp(otp);
+				userDoc.setUuid(model.getUuid());
+
+				otpRepo.save(userDoc);
+
+				emailServ.sendOtpEmail(model.getEmail(), otp);
+			}
+
+			return response.AppResponse("OTPSuccess", null, otp);
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
+	}
+
+	public ResponseEntity<ApiResponses> forgetPasswordService(ResponseBean response, CommonReqModel model)
+			throws Exception {
+
+		try {
+			if (model.getUuid().isEmpty()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
+
 //            System.out.println(12);
-            
-            Optional<OTP> userOtp =otpRepo.findByUuidAndEmailOtp(model.getUuid(), model.getOtp());
-            
-            if(!userOtp.isPresent()) {
-            	return response.AppResponse("OTPError", null, null);
-            }
-           
-             
-            Optional<MasUser> user=userRepo.findByUuidAndActiveFlag(model.getUuid(),"Y");
-            
-            
-            if(!user.isPresent()) {
-            	return response.AppResponse("Invalid", null, null);
-            }
-            MasUser userData=user.get();
-            userData.setUserPwd(model.getUser_pwd());
-            
-            userRepo.save(userData);
-            
-      return response.AppResponse("PWDSuccess", null, null);
 
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw ex;
-        }
-    }
-    
-    
-    public ResponseEntity<ApiResponses> purchaseInterviewService(ResponseBean response, CommonReqModel model,String authToken) {
+			Optional<OTP> userOtp = otpRepo.findByUuidAndEmailOtp(model.getUuid(), model.getOtp());
 
-        try {
-        	if(authToken.isBlank() || authToken.isEmpty()) {
-    			return response.AppResponse("Nulltype", null, null);
-    		}
-    		
-    		if(!tokenservice.validateTokenAndReturnBool(authToken)) {
-    			throw new GlobalExceptionHandler.ExpiredException();
-    		}
-            	String[] tdata = tokenservice.decodeJWT(authToken);
-                String uuid = tdata[1];
-                
-                int intCount=model.getCount();
-                
-                UserSubscription refuserSubscription=usersubRepo.findByUuid(uuid).get();
-           	if( refuserSubscription.getCoin()<intCount*2){
-           		return response.AppResponse("Insufficient", null,null);
-           	}
-                	refuserSubscription.setTCount(refuserSubscription.getTCount() - intCount);
-                	refuserSubscription.setCoin(refuserSubscription.getCoin()-intCount*2);
-                	
-                	
-                	usersubRepo.save(refuserSubscription);
-            return response.AppResponse("RegSuccess", null,null);
+			if (!userOtp.isPresent()) {
+				return response.AppResponse("OTPError", null, null);
+			}
 
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw ex;
-        }
-    }
-    
-    public ResponseEntity<ApiResponses> getmockAptiQsService(
-            ResponseBean response,
-            CommonReqModel model,
-            String authToken) {
+			Optional<MasUser> user = userRepo.findByUuidAndActiveFlag(model.getUuid(), "Y");
 
-        try {
-            if (authToken == null || authToken.isBlank()) {
-                return response.AppResponse("Nulltype", null, null);
-            }
+			if (!user.isPresent()) {
+				return response.AppResponse("Invalid", null, null);
+			}
+			MasUser userData = user.get();
+			userData.setUserPwd(model.getUser_pwd());
 
-            if (!tokenservice.validateTokenAndReturnBool(authToken)) {
-                throw new GlobalExceptionHandler.ExpiredException();
-            }
+			userRepo.save(userData);
 
-            String[] tdata = tokenservice.decodeJWT(authToken);
-            String uuid = tdata[1];
+			return response.AppResponse("PWDSuccess", null, null);
 
-            String examLevel = model.getLevel() == null || model.getLevel().isBlank()
-                    ? "begineer"
-                    : model.getLevel().toLowerCase();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
+	}
 
-            int qsSizePerCat;
-            switch (examLevel) {
-                case "intermediate":
-                    qsSizePerCat = 15;
-                    break;
-                case "advanced":
-                    qsSizePerCat = 20;
-                    break;
-                default:
-                    qsSizePerCat = 10;
-            }
-            List<Map<String, Object>> finalList = new ArrayList<>();
+	public ResponseEntity<ApiResponses> purchaseInterviewService(ResponseBean response, CommonReqModel model,
+			String authToken) {
 
-            for (String type : model.getTypes()) {
+		try {
+			if (authToken.isBlank() || authToken.isEmpty()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
 
-                List<AptitudeQs> qsList =
-                        aptitudeqsRepo.findRandomByCategory(type, qsSizePerCat);
+			if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+				throw new GlobalExceptionHandler.ExpiredException();
+			}
+			String[] tdata = tokenservice.decodeJWT(authToken);
+			String uuid = tdata[1];
+
+			int intCount = model.getCount();
+
+			UserSubscription refuserSubscription = usersubRepo.findByUuid(uuid).get();
+			if (refuserSubscription.getCoin() < intCount * 2) {
+				return response.AppResponse("Insufficient", null, null);
+			}
+			refuserSubscription.setTCount(refuserSubscription.getTCount() - intCount);
+			refuserSubscription.setCoin(refuserSubscription.getCoin() - intCount * 2);
+
+			usersubRepo.save(refuserSubscription);
+			return response.AppResponse("RegSuccess", null, null);
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
+	}
+
+	public ResponseEntity<ApiResponses> getmockAptiQsService(ResponseBean response, CommonReqModel model,
+			String authToken) {
+
+		try {
+			if (authToken == null || authToken.isBlank()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
+
+			if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+				throw new GlobalExceptionHandler.ExpiredException();
+			}
+
+			String[] tdata = tokenservice.decodeJWT(authToken);
+			String uuid = tdata[1];
+
+			String examLevel = model.getLevel() == null || model.getLevel().isBlank() ? "begineer"
+					: model.getLevel().toLowerCase();
+
+			int qsSizePerCat;
+			switch (examLevel) {
+			case "intermediate":
+				qsSizePerCat = 15;
+				break;
+			case "advanced":
+				qsSizePerCat = 20;
+				break;
+			default:
+				qsSizePerCat = 10;
+			}
+			List<Map<String, Object>> finalList = new ArrayList<>();
+
+			for (String type : model.getTypes()) {
+
+				List<AptitudeQs> qsList = aptitudeqsRepo.findRandomByCategory(type, qsSizePerCat);
 //                System.out.println(qsList);
-                if (qsList != null) {
-                    for (AptitudeQs qs : qsList) {
+				if (qsList != null) {
+					for (AptitudeQs qs : qsList) {
 
-                        Map<String, Object> map = Map.of(
-                                "id", qs.getQsId(),       
-                                "category", qs.getCategory(),
-                                "text", qs.getQuestion(),
-                                "options", List.of(
-                                        qs.getOption1(),
-                                        qs.getOption2(),
-                                        qs.getOption3(),
-                                        qs.getOption4()
-                                )
-                        );
+						Map<String, Object> map = Map.of("id", qs.getQsId(), "category", qs.getCategory(), "text",
+								qs.getQuestion(), "options",
+								List.of(qs.getOption1(), qs.getOption2(), qs.getOption3(), qs.getOption4()));
 
-                        finalList.add(map);
-                    }
-                }
-            }
+						finalList.add(map);
+					}
+				}
+			}
 
+			if (!finalList.isEmpty()) {
+				return response.AppResponse("Success", null, finalList);
+			} else {
+				return response.AppResponse("Notfound", null, null);
+			}
 
-            if (!finalList.isEmpty()) {
-                return response.AppResponse("Success", null, finalList);
-            } else {
-                return response.AppResponse("Notfound", null, null);
-            }
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
+	}
 
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw ex;
-        }
-    }
-    
-    
-    public ResponseEntity<ApiResponses> submitmockAptiQsService(
-            ResponseBean response,
-            CommonReqModel model,
-            String authToken) {
-        try {
-            if (authToken == null || authToken.isBlank()) {
-                return response.AppResponse("Nulltype", null, null);
-            }
+	public ResponseEntity<ApiResponses> submitmockAptiQsService(ResponseBean response, CommonReqModel model,
+			String authToken) {
+		try {
+			if (authToken == null || authToken.isBlank()) {
+				return response.AppResponse("Nulltype", null, null);
+			}
 
-            if (!tokenservice.validateTokenAndReturnBool(authToken)) {
-                throw new GlobalExceptionHandler.ExpiredException();
-            }
+			if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+				throw new GlobalExceptionHandler.ExpiredException();
+			}
 
-            String[] tdata = tokenservice.decodeJWT(authToken);
-            String uuid = tdata[1];
+			String[] tdata = tokenservice.decodeJWT(authToken);
+			String uuid = tdata[1];
 
-            int totalQuestions=0,attempted=0,right = 0,wrong=0,negativeMarks=0,totalMarksObtained=0;
-            
+			int totalQuestions = 0, attempted = 0, right = 0, wrong = 0, negativeMarks = 0, totalMarksObtained = 0;
+
 //            "totalQuestions", 8,
 //            "attempted", 6,
 //            "skipped", 2,
@@ -1726,56 +1492,109 @@ public class AuthServiceNew {
 //            "wrong", 2,
 //            "negativeMarks", -1.0,
 //            "totalMarksObtained", 7.0
-            
-            
-            for (Object res : model.getResponses()) {
-				
-            	 Map<String, Object> resMap = (Map<String, Object>) res;
-            
-            	 long qsId = Long.parseLong(resMap.get("qsid").toString());
-                 String userAnswer = resMap.get("answer").toString();
-                 
-                 Optional<AptitudeQs> optionalQs = aptitudeqsRepo.findByQsId(qsId);
-            
-                 
-                 if (optionalQs.isPresent()) {
-//                	 System.out.println(optionalQs.get());
-                     AptitudeQs qs = optionalQs.get();
+			List<AptiFeedback.QuestionAttemptDetail> detailList = new ArrayList<>();
+			
+			for (Object res : model.getResponses()) {
 
-                     if (qs.getAnswer().equalsIgnoreCase(userAnswer)) {
-                         right++;
-                     } else {
-                         wrong++;
-                     }
-                 }
-             
-            }
-            
-            Map<String, Object> result = Map.of(
-            		"totalQuestions", 0,
-                  "attempted", model.getResponses().size(),
-                  "skipped", 0,
-                  "right", right,
-                  "wrong", wrong,
-                  "negativeMarks", BigDecimal.valueOf(wrong*0.33)
-                  .setScale(2, RoundingMode.HALF_UP),
-                  "totalMarksObtained", BigDecimal.valueOf(right-wrong*0.33)
-                  .setScale(2, RoundingMode.HALF_UP)
-            );
-            return response.AppResponse("Success", null, result);
-            
+				Map<String, Object> resMap = (Map<String, Object>) res;
+
+				long qsId = Long.parseLong(resMap.get("qsid").toString());
+				String userAnswer = resMap.get("answer").toString();
+
+				Optional<AptitudeQs> optionalQs = aptitudeqsRepo.findByQsId(qsId);
+
+				if (optionalQs.isPresent()) {
+//                	 System.out.println(optionalQs.get());
+					AptitudeQs qs = optionalQs.get();
+					
+					AptiFeedback.QuestionAttemptDetail detail = new AptiFeedback.QuestionAttemptDetail();
+	                detail.setQsId(qs.getQsId());
+	                detail.setQuestion(qs.getQuestion());
+	                detail.setUserAnswer(userAnswer);
+	                detail.setCorrectAnswer(qs.getAnswer());
+					
+					
+
+					if (qs.getAnswer().equalsIgnoreCase(userAnswer)) {
+						right++;
+						detail.setStatus("Correct");
+					} else {
+						wrong++;
+						detail.setStatus("Wrong");
+					}
+					detailList.add(detail);
+				}
+
+			}
+
+			Map<String, Object> result = Map.of("totalQuestions", 0, "attempted", model.getResponses().size(),
+					"skipped", 0, "right", right, "wrong", wrong, "negativeMarks",
+					BigDecimal.valueOf(wrong * 0.33).setScale(2, RoundingMode.HALF_UP), "totalMarksObtained",
+					BigDecimal.valueOf(right - wrong * 0.33).setScale(2, RoundingMode.HALF_UP));
+			
+			AptiFeedback apti=new AptiFeedback();
+			
+			apti.setUuid(uuid);
+			apti.setAttempted((int) result.get("attempted"));
+			apti.setSkipped((int) result.get("skipped"));
+			apti.setRight((int) result.get("right"));
+			apti.setWrong((int) result.get("wrong"));
+			apti.setTotalQuestions((int) result.get("totalQuestions"));
+			apti.setNegativeMarks((BigDecimal) result.get("negativeMarks"));
+			apti.setTotalMarksObtained((BigDecimal) result.get("totalMarksObtained"));
+			apti.setAttemptDetails(detailList);
+			
+			
+			aptiFeedbackRepository.save(apti);
+			
+			return response.AppResponse("Success", null, result);
+
 //            if (!finalList.isEmpty()) {
 //                return response.AppResponse("Success", null, finalList);
 //            } else {
 //                return response.AppResponse("Notfound", null, null);
 //            }
 
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw ex;
-        }
-	
-    }
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw ex;
+		}
 
-    
+	}
+	
+	public ResponseEntity<ApiResponses> getAptiFeedbackByUuidService(ResponseBean response, String authToken) {
+	    try {
+	        // 1. Basic Validation
+	        if (authToken == null || authToken.isBlank()) {
+	            return response.AppResponse("Nulltype", null, null);
+	        }
+
+	        // 2. Token Validation
+	        if (!tokenservice.validateTokenAndReturnBool(authToken)) {
+	            throw new GlobalExceptionHandler.ExpiredException();
+	        }
+
+	        // 3. Extract UUID from Token
+	        String[] tdata = tokenservice.decodeJWT(authToken);
+	        String uuid = tdata[1];
+
+	        // 4. Fetch from Repository
+	        List<AptiFeedback> feedbackList = aptiFeedbackRepository.findByUuid(uuid);
+
+	        // 5. Return Response
+	        if (feedbackList != null && !feedbackList.isEmpty()) {
+	            // "Success" indicates data found
+	            return response.AppResponse("Success", null, feedbackList);
+	        } else {
+	            // "Notfound" indicates the user hasn't taken any tests yet
+	            return response.AppResponse("Notfound", null, null);
+	        }
+
+	    } catch (Exception ex) {
+	        ex.printStackTrace();
+	        throw ex;
+	    }
+	}
+	
+
 }

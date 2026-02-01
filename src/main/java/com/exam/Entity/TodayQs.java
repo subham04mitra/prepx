@@ -12,14 +12,13 @@ import lombok.Data;
 @Document(collection = "today_qs")
 public class TodayQs {
 
-	@Id 
-    private String id;
-	
+	@Id
+	private String id;
 
-    @Field("qs_id")
-    private long qsId;
-    
-    @Field("date")
-    private Instant date;
-    
+	@Field("qs_id")
+	private long qsId;
+
+	@Field("date")
+	private Instant date;
+
 }

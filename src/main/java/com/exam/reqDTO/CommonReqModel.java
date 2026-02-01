@@ -19,7 +19,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CommonReqModel {
 
-	
 	private String uuid;
 	private int count;
 	private String user_pwd;
@@ -51,106 +50,98 @@ public class CommonReqModel {
 	private String profilePic;
 	private String examId;
 	private List<?> responses;
-	 private String firstName;
-	    private String lastName;
-	    private String headline;
-	    private String phone;
-	    private String city;
-	    private String country;
-	    private String templateId;
-	    private String summary;
-	    private String slug;
-	    private String skills;
+	private String firstName;
+	private String lastName;
+	private String headline;
+	private String phone;
+	private String city;
+	private String country;
+	private String templateId;
+	private String summary;
+	private String slug;
+	private String skills;
 
-	    private List<Social> socials;
-	    private List<Experience> experience;
-	    private List<Education> education;
-	    private List<Project> projects;
-	    
-	    private List<Language> languages;
-	    private List<Certificate> certifications;
-	    private List<Achievement> achievements;
+	private List<Social> socials;
+	private List<Experience> experience;
+	private List<Education> education;
+	private List<Project> projects;
 
-	    
-	    
-	    @Data
-	    @NoArgsConstructor
-	    @AllArgsConstructor
-	    public static class Social {
-	        private String network;
-	        private String url;
-	    }
+	private List<Language> languages;
+	private List<Certificate> certifications;
+	private List<Achievement> achievements;
 
-	    
-	    @Data
-	    @NoArgsConstructor
-	    @AllArgsConstructor
-	    public static class Language {
-	        private String proficiency;
-	        private String name;
-	    }
-	    
-	    
-	    @Data
-	    @NoArgsConstructor
-	    @AllArgsConstructor
-	    public static class Certificate {
-	        private String credentialUrl;
-	        private String name;
-	        private String issueDate;
-	        private String issuingOrganization;
-	    }
-	    
-	    @Data
-	    @NoArgsConstructor
-	    @AllArgsConstructor
-	    public static class Achievement {
-	        private String description;
-	        private String title;
-	    }
-	    
-	    @Data
-	    @NoArgsConstructor
-	    @AllArgsConstructor
-	    public static class Experience {
-	        private String companyName;
-	        private String jobTitle;
-	        private String startDate;
-	        private String endDate;
-	        private String description;
-	    }
+	@Data
+	@NoArgsConstructor
+	@AllArgsConstructor
+	public static class Social {
+		private String network;
+		private String url;
+	}
 
-	    @Data
-	    @NoArgsConstructor
-	    @AllArgsConstructor
-	    public static class Education {
-	        private String institutionName;
-	        private String degree;
-	        private String fieldOfStudy;
-	        private String startDate;
-	        private String endDate;
-	        private String score;
-	    }
+	@Data
+	@NoArgsConstructor
+	@AllArgsConstructor
+	public static class Language {
+		private String proficiency;
+		private String name;
+	}
 
-	    @Data
-	    @NoArgsConstructor
-	    @AllArgsConstructor
-	    public static class Project {
-	        private String title;
-	        private String techStack;
-	        private String projectUrl;
-	        private String repoUrl;
-	        private String description;
-	    }
+	@Data
+	@NoArgsConstructor
+	@AllArgsConstructor
+	public static class Certificate {
+		private String credentialUrl;
+		private String name;
+		private String issueDate;
+		private String issuingOrganization;
+	}
 
-	
-	
-	 @Data
-		public static class QA {
-		    private String question;
-		    private String answer;
-		}
-	
-	
-	
+	@Data
+	@NoArgsConstructor
+	@AllArgsConstructor
+	public static class Achievement {
+		private String description;
+		private String title;
+	}
+
+	@Data
+	@NoArgsConstructor
+	@AllArgsConstructor
+	public static class Experience {
+		private String companyName;
+		private String jobTitle;
+		private String startDate;
+		private String endDate;
+		private String description;
+	}
+
+	@Data
+	@NoArgsConstructor
+	@AllArgsConstructor
+	public static class Education {
+		private String institutionName;
+		private String degree;
+		private String fieldOfStudy;
+		private String startDate;
+		private String endDate;
+		private String score;
+	}
+
+	@Data
+	@NoArgsConstructor
+	@AllArgsConstructor
+	public static class Project {
+		private String title;
+		private String techStack;
+		private String projectUrl;
+		private String repoUrl;
+		private String description;
+	}
+
+	@Data
+	public static class QA {
+		private String question;
+		private String answer;
+	}
+
 }

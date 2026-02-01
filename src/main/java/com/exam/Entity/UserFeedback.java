@@ -10,15 +10,15 @@ import lombok.Data;
 @Document(collection = "user_feedback")
 public class UserFeedback {
 
-	@Id 
-    private String id;
+	@Id
+	private String id;
 
-    @Field("uuid")
-    private String uuid;
-    
-    @Field("rating")
-    private int rating;
-    
-    @Field("feedback")
-    private String feedback;
+	@Field("uuid")
+	private String uuid;
+
+	@Field("rating")
+	private int rating;
+
+	@Field("feedback")
+	private String feedback;
 }

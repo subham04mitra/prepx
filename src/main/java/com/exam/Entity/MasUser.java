@@ -11,50 +11,49 @@ import java.time.Instant;
 @Document(collection = "mas_user")
 public class MasUser {
 
-	@Id 
-    private String id;
-	
+	@Id
+	private String id;
 
-    @Field("uuid")
-    private String uuid;
+	@Field("uuid")
+	private String uuid;
 
-    @Field("user_pwd")
-    private Object userPwd;    
+	@Field("user_pwd")
+	private Object userPwd;
 
-    @Field("user_name")
-    private String userName;
+	@Field("user_name")
+	private String userName;
 
-    @Field("user_role")
-    private String userRole;
+	@Field("user_role")
+	private String userRole;
 
-    @Field("desg")
-    private String userInst;
+	@Field("desg")
+	private String userInst;
 
-    @Field("user_branch")
-    private String userBranch;
+	@Field("user_branch")
+	private String userBranch;
 
-    @Field("active_flag")
-    private String activeFlag;
-    
-    @Field("entry_ts")
-    private Instant entryTs;
+	@Field("active_flag")
+	private String activeFlag;
 
-    @Field("user_email")
-    private String userEmail;
-    
-    @Field("ref_code")
-    private String refCode;
+	@Field("entry_ts")
+	private Instant entryTs;
 
-    @Field("user_mobile")
-    private String userMobile;
+	@Field("user_email")
+	private String userEmail;
 
-    @Field("exp")
-    private String stream;
-    
-    @Field("is_profile_complete")
-    private boolean complete;
+	@Field("ref_code")
+	private String refCode;
 
-    @Field("email_otp")
-    private int emailOtp;
-    
+	@Field("user_mobile")
+	private String userMobile;
+
+	@Field("exp")
+	private String stream;
+
+	@Field("is_profile_complete")
+	private boolean complete;
+
+	@Field("email_otp")
+	private int emailOtp;
+
 }

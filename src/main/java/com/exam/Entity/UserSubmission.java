@@ -12,17 +12,16 @@ import lombok.Data;
 @Document(collection = "user_submission")
 public class UserSubmission {
 
-	@Id 
-    private String id;
-	
+	@Id
+	private String id;
 
-    @Field("qs_id")
-    private long qsId;
-    
-    @Field("uuid")
-    private String uuid;
-    
-    @Field("date")
-    private Instant date;
-	
+	@Field("qs_id")
+	private long qsId;
+
+	@Field("uuid")
+	private String uuid;
+
+	@Field("date")
+	private Instant date;
+
 }

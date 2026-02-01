@@ -1,4 +1,5 @@
 package com.exam.resDTO;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import lombok.AllArgsConstructor;
@@ -10,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LoginResModel {
-	
+
 	private String user_name;
 	private String user_role;
 	private String user_email;

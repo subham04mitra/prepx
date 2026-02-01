@@ -1,6 +1,5 @@
 package com.exam.Exception;
 
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
@@ -20,17 +19,18 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-	
-    // Handle IllegalArgumentException
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("error", "Invalid Input");
-        response.put("message", ex.getMessage());
-        response.put("status", HttpStatus.BAD_REQUEST.value());
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-    }
+
+	// Handle IllegalArgumentException
+	@ExceptionHandler(IllegalArgumentException.class)
+	public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
+		Map<String, Object> response = new HashMap<>();
+		response.put("timestamp", LocalDateTime.now());
+		response.put("error", "Invalid Input");
+		response.put("message", ex.getMessage());
+		response.put("status", HttpStatus.BAD_REQUEST.value());
+		return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+	}
+
 //    @ExceptionHandler(BadSqlGrammarException.class)
 //    public ResponseEntity<Map<String, Object>> BadSqlGrammarException(BadSqlGrammarException ex) {
 //        Map<String, Object> response = new HashMap<>();
@@ -49,43 +49,43 @@ public class GlobalExceptionHandler {
 //        response.put("status", HttpStatus.BAD_REQUEST.value());
 //        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
 //    }
-    // Handle DataAccessException (e.g., database errors)
-    @ExceptionHandler(DataAccessException.class)
-    public ResponseEntity<Map<String, Object>> handleDatabaseException(DataAccessException ex) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("error", "Application Error");
-        response.put("message", ex.getMessage());
-        response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+	// Handle DataAccessException (e.g., database errors)
+	@ExceptionHandler(DataAccessException.class)
+	public ResponseEntity<Map<String, Object>> handleDatabaseException(DataAccessException ex) {
+		Map<String, Object> response = new HashMap<>();
+		response.put("timestamp", LocalDateTime.now());
+		response.put("error", "Application Error");
+		response.put("message", ex.getMessage());
+		response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+		return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+	}
 
-    // Generic Exception Handler
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleException(Exception ex) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("error", "Internal Server Error");
-        response.put("message", ex.getMessage());
-        response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+	// Generic Exception Handler
+	@ExceptionHandler(Exception.class)
+	public ResponseEntity<Map<String, Object>> handleException(Exception ex) {
+		Map<String, Object> response = new HashMap<>();
+		response.put("timestamp", LocalDateTime.now());
+		response.put("error", "Internal Server Error");
+		response.put("message", ex.getMessage());
+		response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+		return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+	}
 
-   @ExceptionHandler(GlobalExceptionHandler.ExpiredException.class)
-    public ResponseEntity<Map<String, Object>> handleApplicationException(GlobalExceptionHandler.ExpiredException ex) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("error", "Session Expired");
-        response.put("status", HttpStatus.REQUEST_TIMEOUT.value());
-        return new ResponseEntity<>(response, HttpStatus.REQUEST_TIMEOUT);
-    }
+	@ExceptionHandler(GlobalExceptionHandler.ExpiredException.class)
+	public ResponseEntity<Map<String, Object>> handleApplicationException(GlobalExceptionHandler.ExpiredException ex) {
+		Map<String, Object> response = new HashMap<>();
+		response.put("timestamp", LocalDateTime.now());
+		response.put("error", "Session Expired");
+		response.put("status", HttpStatus.REQUEST_TIMEOUT.value());
+		return new ResponseEntity<>(response, HttpStatus.REQUEST_TIMEOUT);
+	}
 
-   @ExceptionHandler(MethodArgumentNotValidException.class)
-   public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
-       Map<String, Object> res = new HashMap<>();
-       res.put("timestamp", LocalDateTime.now());
-       res.put("status", 400);
-       res.put("error", "Validation Error");
+	@ExceptionHandler(MethodArgumentNotValidException.class)
+	public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
+		Map<String, Object> res = new HashMap<>();
+		res.put("timestamp", LocalDateTime.now());
+		res.put("status", 400);
+		res.put("error", "Validation Error");
 
 //       List<String> errors = ex.getBindingResult()
 //           .getFieldErrors()
@@ -94,30 +94,28 @@ public class GlobalExceptionHandler {
 //           .collect(Collectors.toList());
 //
 //       res.put("message", errors);
-       return new ResponseEntity<>(res, HttpStatus.BAD_REQUEST);
-   }
-   @ExceptionHandler(GlobalExceptionHandler.DatabaseUnavailableException.class)
-   public ResponseEntity<Object> handleDatabaseDown(GlobalExceptionHandler.DatabaseUnavailableException ex) {
-       Map<String, Object> body = new HashMap<>();
-       body.put("error", "Database Unavailable");
-       body.put("message", ex.getMessage());
-       body.put("timestamp", LocalDateTime.now());
-       return new ResponseEntity<>(body, HttpStatus.SERVICE_UNAVAILABLE);
-   }
-
-
-   public static class DatabaseUnavailableException extends RuntimeException {
-	    public DatabaseUnavailableException(String message) {
-	        super(message);
-	    }
+		return new ResponseEntity<>(res, HttpStatus.BAD_REQUEST);
 	}
 
-    public static class ExpiredException extends RuntimeException {
-        public ExpiredException() {
-            
-        }
-    }
-   
-    
+	@ExceptionHandler(GlobalExceptionHandler.DatabaseUnavailableException.class)
+	public ResponseEntity<Object> handleDatabaseDown(GlobalExceptionHandler.DatabaseUnavailableException ex) {
+		Map<String, Object> body = new HashMap<>();
+		body.put("error", "Database Unavailable");
+		body.put("message", ex.getMessage());
+		body.put("timestamp", LocalDateTime.now());
+		return new ResponseEntity<>(body, HttpStatus.SERVICE_UNAVAILABLE);
+	}
+
+	public static class DatabaseUnavailableException extends RuntimeException {
+		public DatabaseUnavailableException(String message) {
+			super(message);
+		}
+	}
+
+	public static class ExpiredException extends RuntimeException {
+		public ExpiredException() {
+
+		}
+	}
 
 }

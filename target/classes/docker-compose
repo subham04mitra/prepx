@@ -1,0 +1,31 @@
+version: '3.8'  # 1. The Syntax Version
+
+services:       # 2. The List of Containers to Run
+  
+  # --- ACTOR 1: THE DATABASE ---
+  local-mongo:                # 3. Service Name (This becomes the hostname!)
+    image: mongo:latest       # 4. The Image
+    container_name: local-mongo # 5. The explicit name you see in Docker Desktop
+    ports:
+      - "27017:27017"         # 6. Port Mapping (Laptop:Container)
+    environment:              # 7. Environment Variables
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongo_data:/data/db   # 8. Data Persistence
+
+  # --- ACTOR 2: THE SPRING BOOT APP ---
+  prepx:                      # 9. Service Name
+    build: .                  # 10. The Build Instruction
+    container_name: prepx_app
+    ports:
+      - "8080:8080"           # 11. Port Mapping (Laptop:Container)
+    environment:
+      # 12. The Connection Magic
+      SPRING_DATA_MONGODB_URI: mongodb://admin:password@local-mongo:27017/ai_db?authSource=admin
+    depends_on:
+      - local-mongo           # 13. Startup Order
+
+# --- STORAGE DEFINITION ---
+volumes:                      # 14. Volume Declaration
+  mongo_data:

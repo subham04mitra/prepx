@@ -15,6 +15,5 @@ public class LeaderboardDTO {
 	private int rank;
 	private String name;
 	private int score;
-	
-	
+
 }

@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AptiQuestionDto {
 
-    private String id;       // question code / number
-    private String category;
-    private String text;      // question text
-    private List<String> options;
+	private String id; // question code / number
+	private String category;
+	private String text; // question text
+	private List<String> options;
 }

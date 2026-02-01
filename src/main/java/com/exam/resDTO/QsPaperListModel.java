@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class QsPaperListModel {
-	
+
 	private String paper_id;
 	private String exam_name;
 	private String exam_type;
@@ -28,5 +28,5 @@ public class QsPaperListModel {
 	private Object chapter;
 	private Object topic;
 	private Date exam_date;
-	
+
 }

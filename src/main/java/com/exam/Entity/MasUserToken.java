@@ -11,21 +11,21 @@ import java.time.Instant;
 @Document(collection = "mas_user_vs_token")
 public class MasUserToken {
 
-    @Id
-    private String id;
+	@Id
+	private String id;
 
-    @Field("uuid")
-    private String uuid;
+	@Field("uuid")
+	private String uuid;
 
-    @Field("jwt")
-    private String jwt;
+	@Field("jwt")
+	private String jwt;
 
-    @Field("is_invalid")
-    private Boolean isInvalid;
+	@Field("is_invalid")
+	private Boolean isInvalid;
 
-    @Field("is_logout")
-    private Boolean isLogout;
+	@Field("is_logout")
+	private Boolean isLogout;
 
-    @Field("entry_ts")
-    private Instant entryTs;
+	@Field("entry_ts")
+	private Instant entryTs;
 }
