@@ -1,5 +1,7 @@
 # MongoDB (example MongoDB Atlas or server)
-spring.data.mongodb.uri=${DB_URL}
+# Replace the cloud URI with this:
+spring.data.mongodb.uri=mongodb://admin:password@localhost:27017/ai_db?authSource=admin
+#spring.data.mongodb.uri=${DB_URL}
 razorpay.key.secret=${RZE_SECRET}
 razorpay.key.id=${RZR_KEY}
 
@@ -15,6 +17,5 @@ jwt.secret=${JWT}
 #server.port=8001
 google.api.key=${GEMINI_KEY}
 
-#server.port=8088
-groq.api.key=${GROQ_KEY}
 
+groq.api.key=${GROQ_KEY}
